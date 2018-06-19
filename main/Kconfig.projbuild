@@ -18,10 +18,6 @@ config MQTT_URI
     help
         mqtts://username:password@iot.eclipse.org:1884
 
-config MQTT_CACERT
-    string "Path to certifcate (embedded into app)"
-    default "tls/ca.pem.crt"
-
 config MQTT_USER
     string "MQTT Username"
     default "user4711"
@@ -29,6 +25,14 @@ config MQTT_USER
 config MQTT_PASSWORD
     string "MQTT Password"
     default "verysecret1234"
+
+config BEACON_MAJOR
+    int "iBeacon Major"
+    default "4055"
+
+config BEACON_MINOR
+    int "iBeacon Minor"
+    default "4056"
 
 
 endmenu

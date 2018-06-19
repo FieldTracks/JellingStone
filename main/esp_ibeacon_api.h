@@ -42,8 +42,8 @@ This file is part of JellingStone - (C) The Fieldtracks Project
  * if device advertises using ESP defined UUID.
  * Please refer to http://zb.weixin.qq.com for further information. */
 #define ESP_UUID    {0xFD, 0xA5, 0x06, 0x93, 0xA4, 0xE2, 0x4F, 0xB1, 0xAF, 0xCF, 0xC6, 0xEB, 0x07, 0x64, 0x78, 0x25}
-#define ESP_MAJOR   4055
-#define ESP_MINOR   4056
+#define ESP_MAJOR   CONFIG_BEACON_MAJOR
+#define ESP_MINOR   CONFIG_BEACON_MINOR
 
 
 typedef struct {

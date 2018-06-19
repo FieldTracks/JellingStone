@@ -7,3 +7,6 @@
 [submodule "components/miniz"]
 	path = components/miniz
 	url = git@github.com:richgel999/miniz.git
+[submodule "main/ota"]
+	path = main/ota
+	url = https://github.com/FieldTracks/esp32-ota-https.git

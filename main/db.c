@@ -8,20 +8,13 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 */
 #include <string.h>
 #include "db.h"
-#include "esp_system.h"
-#include "esp_bt.h"
-#include "esp_gap_ble_api.h"
-#include "esp_gattc_api.h"
-#include "esp_gatt_defs.h"
-#include "esp_bt_main.h"
-#include "esp_ibeacon_api.h"
 #include "cJSON.h"
 #include "util.h"
 
-#define BD_ADDR_LEN     (6)
+#include "esp_ibeacon_api.h"
 
 typedef struct _db_entry {
-    esp_bd_addr_t peer;
+    uint8_t proximity_uuid [DB_UUID_LENGTH_IN_BYTE];
     int min_rssi;
     int max_rssi;
     int total_rssi;
@@ -29,15 +22,14 @@ typedef struct _db_entry {
     int remoteRssi;
     uint16_t major;
     uint16_t minor;
-    uint8_t proximity_uuid [16];
 } db_entry;
 
 static db_entry database[500];
 static int cnt = 0;
 
-void db_add(esp_bd_addr_t *bda, int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *proximity_uuid){
+void db_add(int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *proximity_uuid){
   for(int i = 0; i < cnt;i++){
-    if(memcmp(bda,database[i].peer,BD_ADDR_LEN) == 0) {
+    if(memcmp(proximity_uuid,database[i].proximity_uuid,DB_UUID_LENGTH_IN_BYTE) == 0) {
       database[i].min_rssi = (database[i].min_rssi < rssi) ? database[i].min_rssi : rssi;
       database[i].max_rssi = (database[i].max_rssi > rssi) ? database[i].max_rssi : rssi;
       database[i].total_rssi += rssi;
@@ -46,9 +38,7 @@ void db_add(esp_bd_addr_t *bda, int rssi, int remoteRssi, uint16_t major, uint16
     }
   }
   int pos =  cnt++;
-  for (int i = 0; i < 16; i++) {
-    database[pos].proximity_uuid[i] = (proximity_uuid != NULL) ? proximity_uuid[i] : 0;;
-  }
+  memcpy(database[pos].proximity_uuid,proximity_uuid,DB_UUID_LENGTH_IN_BYTE);
   database[pos].min_rssi = rssi;
   database[pos].max_rssi = rssi;
   database[pos].total_rssi = rssi;
@@ -56,7 +46,6 @@ void db_add(esp_bd_addr_t *bda, int rssi, int remoteRssi, uint16_t major, uint16
   database[pos].remoteRssi = remoteRssi;
   database[pos].major = major;
   database[pos].minor = minor;
-  memcpy(&database[pos].peer,bda,BD_ADDR_LEN);
 }
 
 /**
@@ -64,11 +53,15 @@ Dumps database to pointer
 */
 char *db_dump_flush(char *timestmp) {
   cJSON *devices = cJSON_CreateObject();
-  char mac_str[18];
   char uuid_str[48];
 
+  uint8_t uuid[] = ESP_UUID;
+  uuid2str(uuid, uuid_str);
+  cJSON_AddItemToObject(devices, "uuid", cJSON_CreateString(uuid_str));
+  cJSON_AddItemToObject(devices, "major", cJSON_CreateNumber(ESP_MAJOR));
+  cJSON_AddItemToObject(devices, "minor", cJSON_CreateNumber(ESP_MINOR));
+
   for(int i = 0; i < cnt; i++){
-    mac2str(&(database[i].peer), mac_str);
     uuid2str(database[i].proximity_uuid, uuid_str);
     cJSON *beacon = cJSON_CreateObject();
     cJSON_AddItemToObject(beacon, "min", cJSON_CreateNumber(database[i].min_rssi));
@@ -77,8 +70,7 @@ char *db_dump_flush(char *timestmp) {
     cJSON_AddItemToObject(beacon, "remoteRssi", cJSON_CreateNumber(database[i].remoteRssi));
     cJSON_AddItemToObject(beacon, "major", cJSON_CreateNumber(database[i].major));
     cJSON_AddItemToObject(beacon, "minor", cJSON_CreateNumber(database[i].minor));
-    cJSON_AddItemToObject(beacon, "uuid", cJSON_CreateString(uuid_str));
-    cJSON_AddItemToObject(devices, mac_str,beacon);
+    cJSON_AddItemToObject(devices, uuid_str,beacon);
   }
   cJSON_AddItemToObject(devices, "timestmp", cJSON_CreateString(timestmp));
   cnt = 0;

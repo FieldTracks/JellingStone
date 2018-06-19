@@ -58,8 +58,8 @@ static esp_ble_scan_params_t ble_scan_params = {
 };
 
 static esp_ble_adv_params_t ble_adv_params = {
-    .adv_int_min        = 0x0900,
-    .adv_int_max        = 0x0900,
+    .adv_int_min        = 0x20,
+    .adv_int_max        = 0x40,
     .adv_type           = ADV_TYPE_NONCONN_IND,
     .own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
     .channel_map        = ADV_CHNL_ALL,
@@ -94,19 +94,25 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         int remoteRssi = 0;
         uint16_t major = 0;
         uint16_t minor = 0;
-        uint8_t *proximity_uuid = NULL;
+        uint8_t proximity_uuid[DB_UUID_LENGTH_IN_BYTE];
         esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
         if (esp_ble_is_ibeacon_packet(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len)){
             esp_ble_ibeacon_t *ibeacon_data = (esp_ble_ibeacon_t*)(scan_result->scan_rst.ble_adv);
+            //esp_log_buffer_hex("IBEACON_DEMO: Device address:", scan_result->scan_rst.bda, ESP_BD_ADDR_LEN );
+            //esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
             remoteRssi = ibeacon_data->ibeacon_vendor.measured_power;
             major = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.major);
             minor = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.minor);
-            proximity_uuid = ibeacon_data->ibeacon_vendor.proximity_uuid;
+            memcpy(proximity_uuid,ibeacon_data->ibeacon_vendor.proximity_uuid,DB_UUID_LENGTH_IN_BYTE);
+        } else {
+          //ESP_LOGE(DEMO_TAG, "Kein iBeacon");
+          memset(proximity_uuid, 0, DB_UUID_LENGTH_IN_BYTE);
+          memcpy(proximity_uuid,scan_result->scan_rst.bda,6);
         }
         /*ESP_LOGI(DEMO_TAG, "---------- BT device found----------");
         esp_log_buffer_hex("IBEACON_DEMO: Device address:", scan_result->scan_rst.bda, BD_ADDR_LEN );
         ESP_LOGI(DEMO_TAG, "RSSI of packet:%d dbm", scan_result->scan_rst.rssi);*/
-        db_add(&scan_result->scan_rst.bda,scan_result->scan_rst.rssi,remoteRssi,major,minor,proximity_uuid);
+        db_add(scan_result->scan_rst.rssi,remoteRssi,major,minor,proximity_uuid);
         break;
     }
 
@@ -152,14 +158,14 @@ void ble_ibeacon_appRegister(void)
 void ble_start(){
   esp_ble_ibeacon_t ibeacon_adv_data;
   esp_err_t status = esp_ble_config_ibeacon_data (&vendor_config, &ibeacon_adv_data);
+  if (status != ESP_OK) {
+      ESP_LOGE(DEMO_TAG, "%s enable ibeacon failed: %s\n", __func__, esp_err_to_name(status));
+      return;
+  }
+
+
   esp_ble_gap_config_adv_data_raw((uint8_t*)&ibeacon_adv_data, sizeof(ibeacon_adv_data));
   esp_ble_gap_start_scanning(0);
-
-  //int pwr = CONFIG_BLE_PWR;
-  //ESP_LOGI(DEMO_TAG, "Setting transmission power to = %d", pwr)
-  //if ((status = esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, pwr)) != ESP_OK) {
-  //    ESP_LOGE(DEMO_TAG, "Error setting transmission power for ADV = %x", status);
-  //}
 
 }
 void ble_stop(){
