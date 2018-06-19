@@ -5,3 +5,5 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 
     You should have received a copy of COLi along with JellingStone.
     If not, please contact info@fieldtracks.org
+
+Note: espmqtt must be installed to build this project c.f. https://github.com/tuanpmt/espmqtt
