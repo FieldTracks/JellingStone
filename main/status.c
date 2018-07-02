@@ -51,6 +51,9 @@ void blink_task(void *pvParameter)
         vTaskSuspend( NULL );
       } else if ( wifiStatus == STATUS_WIFI_CONNECTED){
         blink(1,100);
+      } else if ( wifiStatus == STATUS_NVS_MISSINGDATA || mqttStatus == STATUS_NVS_MISSINGDATA){
+        blink(1, 75);
+        blink(1, 200);
       } else {
         blink(1,1000);
       }
@@ -82,6 +85,9 @@ void status_set(int status){
     wifiStatus = STATUS_BOOTING;
   } else if (status == STATUS_MQTT_DISCONNECTED) {
     mqttStatus = STATUS_BOOTING;
+  } else if (status == STATUS_NVS_MISSINGDATA) {
+    wifiStatus = STATUS_NVS_MISSINGDATA;
+    mqttStatus = STATUS_NVS_MISSINGDATA;
   }
   resetBlinking();
 }

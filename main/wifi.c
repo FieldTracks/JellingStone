@@ -17,6 +17,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "nvs_flash.h"
 #include "esp_event_loop.h"
 #include "esp_log.h"
+#include "nvs.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -31,9 +32,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 
 static EventGroupHandle_t wifi_event_group;
 const static int CONNECTED_BIT = BIT0;
-
-#define CONFIG_WIFI_SSID      CONFIG_ESP_WIFI_SSID
-#define CONFIG_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
 
 static const char *TAG = "wifi.c";
 
@@ -66,15 +64,51 @@ void start_wifi()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    
+    nvs_handle nvs_handler;
+    esp_err_t err = nvs_open("wifi_config", NVS_READONLY, &nvs_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error opening NVS handle!");
+        status_set(STATUS_NVS_MISSINGDATA);
+        return;
+    }
+
+    size_t size_ssid = 0, size_pass = 0;
+    esp_err_t err_ssid, err_pass;
+    err_ssid = nvs_get_str(nvs_handler, "ssid", NULL, &size_ssid);
+    err_pass = nvs_get_str(nvs_handler, "pass", NULL, &size_pass);
+    if (err_ssid != ESP_OK || err_pass != ESP_OK){
+        ESP_LOGE(TAG, "Error reading values from NVS!");
+        status_set(STATUS_NVS_MISSINGDATA);
+        return;
+    }
+
+    char *wifi_ssid = (char *)malloc(size_ssid);
+    char *wifi_pass = (char *)malloc(size_pass);
+    err_ssid = nvs_get_str(nvs_handler, "ssid", wifi_ssid, &size_ssid);
+    err_pass = nvs_get_str(nvs_handler, "pass", wifi_pass, &size_pass);
+    if (err_ssid != ESP_OK || err_pass != ESP_OK){
+        ESP_LOGE(TAG, "Error reading values from NVS!");
+        status_set(STATUS_NVS_MISSINGDATA);
+        return;
+    }
+
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = CONFIG_WIFI_SSID,
-            .password = CONFIG_WIFI_PASS,
+            .ssid = "",
+            .password = "",
         },
     };
+
+    strcpy((char *)wifi_config.sta.ssid, wifi_ssid);
+    strcpy((char *)wifi_config.sta.password, wifi_pass);
+    nvs_close(nvs_handler);
+    free(wifi_ssid);
+    free(wifi_pass);
+
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-    ESP_LOGI(TAG, "start the WIFI SSID:[%s] password:[%s]", CONFIG_WIFI_SSID, "******");
+    ESP_LOGI(TAG, "start the WIFI SSID:[%s] password:[%s]", (char *)wifi_config.sta.ssid, "******");
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_LOGI(TAG, "Waiting for wifi");
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);

@@ -1,0 +1,8 @@
+key,type,encoding,value
+wifi_config,namespace,,
+ssid,data,string,<ssid>
+pass,data,string,<pass>
+mqtt_config,namespace,,
+uri,data,string,<uri>
+user,data,string,<user>
+pass,data,string,<pass>
