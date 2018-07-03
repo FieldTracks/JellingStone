@@ -46,6 +46,8 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "db.h"
 #include "status.h"
 
+#define BLE_SCAN_INTERVAL CONFIG_BLE_SCAN_INTERVAL
+
 extern esp_ble_ibeacon_vendor_t vendor_config;
 
 static char *MY_TAG ="main.c";
@@ -109,9 +111,9 @@ void app_main()
   init();
   ble_init();
   while(1){
-    ESP_LOGI(MY_TAG, "Starting BLE - scan + beacon for 8 seconds");
+    ESP_LOGI(MY_TAG, "Starting BLE - scan + beacon for %d seconds", BLE_SCAN_INTERVAL);
     ble_start();
-    vTaskDelay(8 * 1000 / portTICK_PERIOD_MS);
+    vTaskDelay(BLE_SCAN_INTERVAL * 1000 / portTICK_PERIOD_MS);
     ESP_LOGI(MY_TAG, "Stopping BLE ");
     ble_stop();
     //ESP_LOGI(MY_TAG, "BT Classic device scan for 5 seconds");

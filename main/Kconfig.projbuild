@@ -34,5 +34,14 @@ config BEACON_MINOR
     int "iBeacon Minor"
     default "4056"
 
+config BLE_SCAN_INTERVAL
+    int "BLE Scan interval (in seconds)"
+    default "16"
+
+
+config DEVICE_COMMENT
+    string "Text comment for a device - included in all published MQTT-messages"
+    default ""
+
 
 endmenu

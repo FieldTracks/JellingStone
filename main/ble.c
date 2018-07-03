@@ -105,7 +105,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             minor = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.minor);
             memcpy(proximity_uuid,ibeacon_data->ibeacon_vendor.proximity_uuid,DB_UUID_LENGTH_IN_BYTE);
         } else {
-          //ESP_LOGE(DEMO_TAG, "Kein iBeacon");
+          // ESP_LOGE(DEMO_TAG, "Kein iBeacon");
           memset(proximity_uuid, 0, DB_UUID_LENGTH_IN_BYTE);
           memcpy(proximity_uuid,scan_result->scan_rst.bda,6);
         }
