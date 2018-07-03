@@ -30,7 +30,7 @@ static int cnt = 0;
 
 void db_add(int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *proximity_uuid){
   for(int i = 0; i < cnt;i++){
-    if(memcmp(proximity_uuid,database[i].proximity_uuid,DB_UUID_LENGTH_IN_BYTE) == 0 && major == database[i].major && minor == database[i] == minor){
+    if(memcmp(proximity_uuid,database[i].proximity_uuid,DB_UUID_LENGTH_IN_BYTE) == 0 && major == database[i].major && minor == database[i].minor ){
       database[i].min_rssi = (database[i].min_rssi < rssi) ? database[i].min_rssi : rssi;
       database[i].max_rssi = (database[i].max_rssi > rssi) ? database[i].max_rssi : rssi;
       database[i].total_rssi += rssi;
