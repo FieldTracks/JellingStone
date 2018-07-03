@@ -32,10 +32,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 
 static const char *TAG = "mqtt.c";
 
-#define MQTT_URI CONFIG_MQTT_URI
-#define MQTT_USER CONFIG_MQTT_USER
-#define MQTT_PASSWD CONFIG_MQTT_PASSWORD
-
 extern const uint8_t server_pem_start[] asm("_binary_server_pem_start");
 extern const uint8_t server_pem_end[]   asm("_binary_server_pem_end");
 int msgid=0;
@@ -82,17 +78,50 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 static esp_mqtt_client_handle_t client;
 void mqtt_start()
 {
-  const esp_mqtt_client_config_t mqtt_cfg = {
-      .uri = MQTT_URI,
+    nvs_handle nvs_handler;
+    esp_err_t err = nvs_open("mqtt_config", NVS_READONLY, &nvs_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error opening NVS handle!");
+        status_set(STATUS_NVS_MISSINGDATA);
+        return;
+    }
+
+    size_t size_uri = 0, size_user = 0, size_pass = 0;
+    esp_err_t err_uri, err_user, err_pass;
+    err_uri = nvs_get_str(nvs_handler, "uri", NULL, &size_uri);
+    err_user = nvs_get_str(nvs_handler, "user", NULL, &size_user);
+    err_pass = nvs_get_str(nvs_handler, "pass", NULL, &size_pass);
+    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK){
+        ESP_LOGE(TAG, "Error reading values from NVS!");
+        status_set(STATUS_NVS_MISSINGDATA);
+        return;
+    }
+
+    char *mqtt_uri = (char *)malloc(size_uri);
+    char *mqtt_user = (char *)malloc(size_user);
+    char *mqtt_pass = (char *)malloc(size_pass);
+    err_uri = nvs_get_str(nvs_handler, "uri", mqtt_uri, &size_uri);
+    err_user = nvs_get_str(nvs_handler, "user", mqtt_user, &size_user);
+    err_pass = nvs_get_str(nvs_handler, "pass", mqtt_pass, &size_pass);
+    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK){
+        ESP_LOGE(TAG, "Error reading values from NVS!");
+        status_set(STATUS_NVS_MISSINGDATA);
+        return;
+    }
+
+    const esp_mqtt_client_config_t mqtt_cfg = {
+      .uri = mqtt_uri,
       .event_handle = mqtt_event_handler,
       .cert_pem = (const char *)server_pem_start,
-      .username = MQTT_USER,
-      .password = MQTT_PASSWD,
+      .username = mqtt_user,
+      .password = mqtt_pass,
 
       // .user_context = (void *)your_context
-  };
-  client = esp_mqtt_client_init(&mqtt_cfg);
-  esp_mqtt_client_start(client);
+    };
+    nvs_close(nvs_handler);
+
+    client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_start(client);
 }
 
 void mqtt_publish(uint8_t mac_id[6], char* message){
