@@ -32,8 +32,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 
 static const char *TAG = "mqtt.c";
 
-extern const uint8_t server_pem_start[] asm("_binary_server_pem_start");
-extern const uint8_t server_pem_end[]   asm("_binary_server_pem_end");
 int msgid=0;
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
@@ -86,12 +84,13 @@ void mqtt_start()
         return;
     }
 
-    size_t size_uri = 0, size_user = 0, size_pass = 0;
-    esp_err_t err_uri, err_user, err_pass;
+    size_t size_uri = 0, size_user = 0, size_pass = 0, size_cert = 0;
+    esp_err_t err_uri, err_user, err_pass, err_cert;
     err_uri = nvs_get_str(nvs_handler, "uri", NULL, &size_uri);
     err_user = nvs_get_str(nvs_handler, "user", NULL, &size_user);
     err_pass = nvs_get_str(nvs_handler, "pass", NULL, &size_pass);
-    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK){
+    err_cert = nvs_get_str(nvs_handler, "cert", NULL, &size_cert);
+    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK || err_cert != ESP_OK){
         ESP_LOGE(TAG, "Error reading values from NVS!");
         status_set(STATUS_NVS_MISSINGDATA);
         return;
@@ -100,10 +99,12 @@ void mqtt_start()
     char *mqtt_uri = (char *)malloc(size_uri);
     char *mqtt_user = (char *)malloc(size_user);
     char *mqtt_pass = (char *)malloc(size_pass);
+    char *mqtt_cert = (char *)malloc(size_cert);
     err_uri = nvs_get_str(nvs_handler, "uri", mqtt_uri, &size_uri);
     err_user = nvs_get_str(nvs_handler, "user", mqtt_user, &size_user);
     err_pass = nvs_get_str(nvs_handler, "pass", mqtt_pass, &size_pass);
-    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK){
+    err_cert = nvs_get_str(nvs_handler, "cert", mqtt_cert, &size_cert);
+    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK || err_cert != ESP_OK){
         ESP_LOGE(TAG, "Error reading values from NVS!");
         status_set(STATUS_NVS_MISSINGDATA);
         return;
@@ -112,7 +113,7 @@ void mqtt_start()
     const esp_mqtt_client_config_t mqtt_cfg = {
       .uri = mqtt_uri,
       .event_handle = mqtt_event_handler,
-      .cert_pem = (const char *)server_pem_start,
+      .cert_pem = mqtt_cert,
       .username = mqtt_user,
       .password = mqtt_pass,
 

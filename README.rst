@@ -17,4 +17,5 @@ This will not run during "make flash"
 2) Edit the credentials
 3) Run "make flash_nvs"
 
+NOTE: The path to the certificate must be an absolut path
 IMPORTANT: If the offset of the nvs partition gets updated the offset in the Makfile needs to be updated as well
