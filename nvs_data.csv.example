@@ -6,3 +6,4 @@ mqtt_config,namespace,,
 uri,data,string,<uri>
 user,data,string,<user>
 pass,data,string,<pass>
+cert,file,string,<absolut path>
