@@ -60,7 +60,6 @@ void dump_scanning_result(){
   esp_efuse_mac_get_default(mac);
   time_str(time_buf);
   char *message = db_dump_flush(time_buf);
-
   mqtt_publish(mac, message);
   ESP_LOGE(MY_TAG, "Got database: %s", message);
 

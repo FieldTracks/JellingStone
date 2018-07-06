@@ -10,8 +10,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 */
 
 #include "esp_gap_ble_api.h"
-void mac2str(esp_bd_addr_t *mac, char dest[18]){
-  uint8_t *p = *mac;
+void mac2str(uint8_t p[6], char dest[18]){
   sprintf(dest, "%02x:%02x:%02x:%02x:%02x:%02x",
           p[0], p[1], p[2], p[3], p[4], p[5]);
 }

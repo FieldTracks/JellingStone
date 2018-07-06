@@ -23,12 +23,13 @@ typedef struct _db_entry {
     int remoteRssi;
     uint16_t major;
     uint16_t minor;
+    uint8_t isBeacon;
 } db_entry;
 
 static db_entry database[400];
 static int cnt = 0;
 
-void db_add(int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *proximity_uuid){
+void db_add(int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *proximity_uuid, uint8_t isBeacon){
   for(int i = 0; i < cnt;i++){
     if(memcmp(proximity_uuid,database[i].proximity_uuid,DB_UUID_LENGTH_IN_BYTE) == 0 && major == database[i].major && minor == database[i].minor ){
       database[i].min_rssi = (database[i].min_rssi < rssi) ? database[i].min_rssi : rssi;
@@ -47,6 +48,7 @@ void db_add(int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *p
   database[pos].remoteRssi = remoteRssi;
   database[pos].major = major;
   database[pos].minor = minor;
+  database[pos].isBeacon = isBeacon;
 }
 
 /**
@@ -56,6 +58,7 @@ char *db_dump_flush(char *timestmp) {
   cJSON *devices = cJSON_CreateObject();
   cJSON *data = cJSON_CreateArray();
   char uuid_str[48];
+  char mac_str[48];
 
   uint8_t uuid[] = ESP_UUID;
   uuid2str(uuid, uuid_str);
@@ -73,9 +76,16 @@ char *db_dump_flush(char *timestmp) {
     cJSON_AddItemToObject(beacon, "max", cJSON_CreateNumber(database[i].max_rssi));
     cJSON_AddItemToObject(beacon, "avg", cJSON_CreateNumber(database[i].total_rssi /  database[i].count));
     cJSON_AddItemToObject(beacon, "remoteRssi", cJSON_CreateNumber(database[i].remoteRssi));
-    cJSON_AddItemToObject(beacon, "major", cJSON_CreateNumber(database[i].major));
-    cJSON_AddItemToObject(beacon, "minor", cJSON_CreateNumber(database[i].minor));
-    cJSON_AddItemToObject(beacon, "uuid", cJSON_CreateString(uuid_str));
+    if(database[i].isBeacon){
+      uuid2str(database[i].proximity_uuid, uuid_str);
+      cJSON_AddItemToObject(beacon, "major", cJSON_CreateNumber(database[i].major));
+      cJSON_AddItemToObject(beacon, "minor", cJSON_CreateNumber(database[i].minor));
+      cJSON_AddItemToObject(beacon, "uuid", cJSON_CreateString(uuid_str));
+    } else {
+      mac2str(database[i].proximity_uuid, mac_str);
+      cJSON_AddItemToObject(beacon, "mac", cJSON_CreateString(mac_str));
+    }
+
     cJSON_AddItemToArray(data, beacon);
   }
   cnt = 0;
