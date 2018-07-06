@@ -2,7 +2,7 @@
 This file is part of JellingStone - (C) The Fieldtracks Project
 
     JellingStone is distributed under the civilian open source license (COSLi).
-    You should have received a copy of COLi along with JellingStone.
+    You should have received a copy of COSLi along with JellingStone.
     If not, please contact info@fieldtracks.org
 
     Based on esp-idf example code, distributed as public domain and CC0
@@ -64,7 +64,7 @@ void start_wifi()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    
+
     nvs_handle nvs_handler;
     esp_err_t err = nvs_open("wifi_config", NVS_READONLY, &nvs_handler);
     if (err != ESP_OK) {
