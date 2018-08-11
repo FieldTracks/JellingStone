@@ -4,16 +4,16 @@ config ESP_WIFI_SSID
     string "WiFi SSID"
     default "sensors"
     help
-	SSID (network name) for the example to connect to.
+	SSID (network name) for the device to connect to.
 
 config ESP_WIFI_PASSWORD
     string "WiFi Password"
     default "mypassword"
     help
-	WiFi password (WPA or WPA2) for the example to use.
+	WiFi password (WPA or WPA2) for the device to use.
 
 config MQTT_URI
-    string "URI of mqtt-brokwer"
+    string "URI of mqtt-broker"
     default "mqtt://iot.eclipse.org"
     help
         mqtts://username:password@iot.eclipse.org:1884
