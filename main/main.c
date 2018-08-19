@@ -2,7 +2,7 @@
 This file is part of JellingStone - (C) The Fieldtracks Project
 
     JellingStone is distributed under the civilian open source license (COSLi).
-    You should have received a copy of COLi along with JellingStone.
+    You should have received a copy of COSLi along with JellingStone.
     If not, please contact info@fieldtracks.org
 */
 
@@ -60,7 +60,6 @@ void dump_scanning_result(){
   esp_efuse_mac_get_default(mac);
   time_str(time_buf);
   char *message = db_dump_flush(time_buf);
-
   mqtt_publish(mac, message);
   ESP_LOGE(MY_TAG, "Got database: %s", message);
 
