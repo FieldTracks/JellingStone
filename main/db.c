@@ -10,9 +10,9 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "db.h"
 #include "cJSON.h"
 #include "util.h"
+#include "nvs.h"
 
 #include "esp_ibeacon_api.h"
-#define DEVICE_COMMENT   CONFIG_DEVICE_COMMENT
 
 typedef struct _db_entry {
     uint8_t proximity_uuid [DB_UUID_LENGTH_IN_BYTE];
@@ -60,10 +60,10 @@ char *db_dump_flush(char *timestmp) {
   uint8_t uuid[] = ESP_UUID;
   uuid2str(uuid, uuid_str);
   cJSON_AddItemToObject(devices, "uuid", cJSON_CreateString(uuid_str));
-  cJSON_AddItemToObject(devices, "major", cJSON_CreateNumber(ESP_MAJOR));
-  cJSON_AddItemToObject(devices, "minor", cJSON_CreateNumber(ESP_MINOR));
+  cJSON_AddItemToObject(devices, "major", cJSON_CreateNumber(get_ble_major()));
+  cJSON_AddItemToObject(devices, "minor", cJSON_CreateNumber(get_ble_minor()));
   cJSON_AddItemToObject(devices, "timestmp", cJSON_CreateString(timestmp));
-  cJSON_AddItemToObject(devices, "comment", cJSON_CreateString(DEVICE_COMMENT));
+  cJSON_AddItemToObject(devices, "comment", cJSON_CreateString(get_device_comment()));
   cJSON_AddItemToObject(devices, "data", data);
 
   for(int i = 0; i < cnt; i++){

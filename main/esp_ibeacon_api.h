@@ -33,17 +33,10 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #define IBEACON_RECEIVER    1
 #define IBEACON_MODE IBEACON_SENDER
 
-/* Major and Minor part are stored in big endian mode in iBeacon packet,
- * need to use this macro to transfer while creating or processing
- * iBeacon data */
-#define ENDIAN_CHANGE_U16(x) ((((x)&0xFF00)>>8) + (((x)&0xFF)<<8))
-
 /* Espressif WeChat official account can be found using WeChat "Yao Yi Yao Zhou Bian",
  * if device advertises using ESP defined UUID.
  * Please refer to http://zb.weixin.qq.com for further information. */
 #define ESP_UUID    {0xFD, 0xA5, 0x06, 0x93, 0xA4, 0xE2, 0x4F, 0xB1, 0xAF, 0xCF, 0xC6, 0xEB, 0x07, 0x64, 0x78, 0x25}
-#define ESP_MAJOR   CONFIG_BEACON_MAJOR
-#define ESP_MINOR   CONFIG_BEACON_MINOR
 
 
 typedef struct {
@@ -75,3 +68,7 @@ extern esp_ble_ibeacon_head_t ibeacon_common_head;
 int esp_ble_is_ibeacon_packet (uint8_t *adv_data, uint8_t adv_data_len);
 
 esp_err_t esp_ble_config_ibeacon_data (esp_ble_ibeacon_vendor_t *vendor_config, esp_ble_ibeacon_t *ibeacon_adv_data);
+
+uint16_t endian_change_u16(uint16_t value);
+
+void ibeacon_init();

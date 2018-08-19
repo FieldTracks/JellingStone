@@ -11,7 +11,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include <string.h>
 #include "esp_wifi.h"
 #include "esp_system.h"
-#include "nvs_flash.h"
 #include "esp_event_loop.h"
 
 #include "freertos/FreeRTOS.h"
@@ -29,6 +28,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "util.h"
 #include "ntp.h"
 #include "status.h"
+#include "nvs.h"
 
 static const char *TAG = "mqtt.c";
 
@@ -76,50 +76,15 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 static esp_mqtt_client_handle_t client;
 void mqtt_start()
 {
-    nvs_handle nvs_handler;
-    esp_err_t err = nvs_open("mqtt_config", NVS_READONLY, &nvs_handler);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error opening NVS handle!");
-        status_set(STATUS_NVS_MISSINGDATA);
-        return;
-    }
-
-    size_t size_uri = 0, size_user = 0, size_pass = 0, size_cert = 0;
-    esp_err_t err_uri, err_user, err_pass, err_cert;
-    err_uri = nvs_get_str(nvs_handler, "uri", NULL, &size_uri);
-    err_user = nvs_get_str(nvs_handler, "user", NULL, &size_user);
-    err_pass = nvs_get_str(nvs_handler, "pass", NULL, &size_pass);
-    err_cert = nvs_get_str(nvs_handler, "cert", NULL, &size_cert);
-    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK || err_cert != ESP_OK){
-        ESP_LOGE(TAG, "Error reading values from NVS!");
-        status_set(STATUS_NVS_MISSINGDATA);
-        return;
-    }
-
-    char *mqtt_uri = (char *)malloc(size_uri);
-    char *mqtt_user = (char *)malloc(size_user);
-    char *mqtt_pass = (char *)malloc(size_pass);
-    char *mqtt_cert = (char *)malloc(size_cert);
-    err_uri = nvs_get_str(nvs_handler, "uri", mqtt_uri, &size_uri);
-    err_user = nvs_get_str(nvs_handler, "user", mqtt_user, &size_user);
-    err_pass = nvs_get_str(nvs_handler, "pass", mqtt_pass, &size_pass);
-    err_cert = nvs_get_str(nvs_handler, "cert", mqtt_cert, &size_cert);
-    if (err_uri != ESP_OK || err_user != ESP_OK || err_pass != ESP_OK || err_cert != ESP_OK){
-        ESP_LOGE(TAG, "Error reading values from NVS!");
-        status_set(STATUS_NVS_MISSINGDATA);
-        return;
-    }
-
     const esp_mqtt_client_config_t mqtt_cfg = {
-      .uri = mqtt_uri,
+      .uri = get_mqtt_uri(),
       .event_handle = mqtt_event_handler,
-      .cert_pem = mqtt_cert,
-      .username = mqtt_user,
-      .password = mqtt_pass,
+      .cert_pem = get_mqtt_cert(),
+      .username = get_mqtt_user(),
+      .password = get_mqtt_pass(),
 
       // .user_context = (void *)your_context
     };
-    nvs_close(nvs_handler);
 
     client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_start(client);
