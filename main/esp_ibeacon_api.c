@@ -33,7 +33,7 @@ esp_ble_ibeacon_vendor_t vendor_config;
 /* For iBeacon packet format, please refer to Apple "Proximity Beacon Specification" doc */
 /* Constant part of iBeacon data */
 void ibeacon_init(){
-    esp_ble_ibeacon_head_t ibeacon_common_head = {
+    ibeacon_common_head = (esp_ble_ibeacon_head_t){
         .flags = {0x02, 0x01, 0x06},
         .length = 0x1A,
         .type = 0xFF,
@@ -42,7 +42,7 @@ void ibeacon_init(){
     };
 
     /* Vendor part of iBeacon data*/
-    esp_ble_ibeacon_vendor_t vendor_config = {
+    vendor_config = (esp_ble_ibeacon_vendor_t){
         .proximity_uuid = ESP_UUID,
         .major = endian_change_u16(get_ble_major()), //Major=ESP_MAJOR
         .minor = endian_change_u16(get_ble_minor()), //Minor=ESP_MINOR

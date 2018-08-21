@@ -9,6 +9,10 @@ COMPONENT_ADD_INCLUDEDIRS := components/include
 
 include $(IDF_PATH)/make/project.mk
 
-stone: flash
-	python $(IDF_PATH)/components/nvs_flash/nvs_partition_generator/nvs_partition_gen.py nvs_data.csv build/nvs.bin
+flash_nvs: build/nvs.bin
 	python $(IDF_PATH)/components/esptool_py/esptool/esptool.py write_flash 0x9000 build/nvs.bin
+
+build/nvs.bin: nvs_data.csv
+	python $(IDF_PATH)/components/nvs_flash/nvs_partition_generator/nvs_partition_gen.py nvs_data.csv build/nvs.bin
+
+stone: flash_nvs flash
