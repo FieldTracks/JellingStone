@@ -26,6 +26,10 @@ config MQTT_PASSWORD
     string "MQTT Password"
     default "verysecret1234"
 
+config MQTT_COMPRESSION
+    bool "Enable zlib compression for MQTT messages"
+    default N
+
 config BEACON_MAJOR
     int "iBeacon Major"
     default "4055"

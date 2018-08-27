@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := ble_ibeacon_demo
+PROJECT_NAME := jellingstone
 
 COMPONENT_ADD_INCLUDEDIRS := components/include
 
