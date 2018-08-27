@@ -13,6 +13,6 @@ flash_nvs: build/nvs.bin
 	python $(IDF_PATH)/components/esptool_py/esptool/esptool.py write_flash 0x9000 build/nvs.bin
 
 build/nvs.bin: nvs_data.csv
-	python $(IDF_PATH)/components/nvs_flash/nvs_partition_generator/nvs_partition_gen.py nvs_data.csv build/nvs.bin
+	python $(IDF_PATH)/components/nvs_flash/nvs_partition_generator/nvs_partition_gen.py nvs_data.csv build/nvs.bin 24
 
 stone: flash_nvs flash
