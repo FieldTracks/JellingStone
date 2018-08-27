@@ -102,8 +102,8 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             //esp_log_buffer_hex("IBEACON_DEMO: Device address:", scan_result->scan_rst.bda, ESP_BD_ADDR_LEN );
             //esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
             remoteRssi = ibeacon_data->ibeacon_vendor.measured_power;
-            major = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.major);
-            minor = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.minor);
+            major = endian_change_u16(ibeacon_data->ibeacon_vendor.major);
+            minor = endian_change_u16(ibeacon_data->ibeacon_vendor.minor);
             memcpy(proximity_uuid,ibeacon_data->ibeacon_vendor.proximity_uuid,DB_UUID_LENGTH_IN_BYTE);
             isBeacon = 1;
         } else {
@@ -176,6 +176,7 @@ void ble_stop(){
 
 void ble_init()
 {
+    ibeacon_init();
     ble_ibeacon_appRegister();
     esp_ble_gap_set_scan_params(&ble_scan_params);
 

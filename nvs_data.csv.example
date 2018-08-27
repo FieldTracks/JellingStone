@@ -7,3 +7,9 @@ uri,data,string,<uri>
 user,data,string,<user>
 pass,data,string,<pass>
 cert,file,string,<absolut path>
+ble_config,namespace,,
+beacon_major,data,uint16_t,<major>
+beacon_minor,data,uint16_t,<minor>
+scan_interval,data,uint16_t,<interval>
+device_config,namespace,,
+comment,data,string,<comment>

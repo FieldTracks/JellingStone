@@ -36,7 +36,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "esp_bt_device.h"
 
 
-
+#include "nvs.h"
 #include "ble.h"
 #include "wifi.h"
 #include "ntp.h"
@@ -103,16 +103,16 @@ void app_main()
   }
   ESP_ERROR_CHECK( ret );
   status_booting();
-  /* Initialize NVS — it is used to store PHY calibration data */
+  nvs_init();
   start_wifi();
   obtain_time();
   mqtt_start();
   init();
   ble_init();
   while(1){
-    ESP_LOGI(MY_TAG, "Starting BLE - scan + beacon for %d seconds", BLE_SCAN_INTERVAL);
+    ESP_LOGI(MY_TAG, "Starting BLE - scan + beacon for %d seconds", get_ble_scan_interval());
     ble_start();
-    vTaskDelay(BLE_SCAN_INTERVAL * 1000 / portTICK_PERIOD_MS);
+    vTaskDelay(get_ble_scan_interval() * 1000 / portTICK_PERIOD_MS);
     ESP_LOGI(MY_TAG, "Stopping BLE ");
     ble_stop();
     //ESP_LOGI(MY_TAG, "BT Classic device scan for 5 seconds");
