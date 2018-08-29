@@ -8,8 +8,8 @@ user,data,string,<user>
 pass,data,string,<pass>
 cert,file,string,<absolut path>
 ble_config,namespace,,
-beacon_major,data,uint16_t,<major>
-beacon_minor,data,uint16_t,<minor>
-scan_interval,data,uint16_t,<interval>
+beacon_major,data,u16,<major>
+beacon_minor,data,u16,<minor>
+scan_interval,data,u16,<interval>
 device_config,namespace,,
 comment,data,string,<comment>

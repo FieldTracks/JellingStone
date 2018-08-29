@@ -1,12 +1,6 @@
-[submodule "components/espmqtt"]
-	path = components/espmqtt
-	url = https://github.com/tuanpmt/espmqtt.git
-[submodule "components/components/espmqtt"]
-	path = components/components/espmqtt
-	url = https://github.com/tuanpmt/espmqtt.git
-[submodule "components/miniz"]
-	path = components/miniz
-	url = git@github.com:richgel999/miniz.git
 [submodule "main/ota"]
 	path = main/ota
 	url = https://github.com/FieldTracks/esp32-ota-https.git
+[submodule "components/espmqtt"]
+	path = components/espmqtt
+	url = https://github.com/tuanpmt/espmqtt.git

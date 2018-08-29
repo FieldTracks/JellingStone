@@ -1,0 +1,7 @@
+menu "JellingStone configuration"
+
+config MQTT_COMPRESSION
+    bool "Enable zlib compression for MQTT messages"
+    default N
+
+endmenu
