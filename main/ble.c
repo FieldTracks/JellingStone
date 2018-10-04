@@ -91,13 +91,17 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         }
         break;
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
+        uint8_t mac_address[6] = {0};
         int remoteRssi = 0;
         uint16_t major = 0;
         uint16_t minor = 0;
         uint8_t proximity_uuid[DB_UUID_LENGTH_IN_BYTE];
+
         esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
-        uint8_t isBeacon = 0;
-        if (esp_ble_is_ibeacon_packet(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len)){
+        uint8_t isBeacon = esp_ble_is_ibeacon_packet(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len);
+
+        if (isBeacon){
+            ESP_LOGI(DEMO_TAG, "Found iBeacon!");
             esp_ble_ibeacon_t *ibeacon_data = (esp_ble_ibeacon_t*)(scan_result->scan_rst.ble_adv);
             //esp_log_buffer_hex("IBEACON_DEMO: Device address:", scan_result->scan_rst.bda, ESP_BD_ADDR_LEN );
             //esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
@@ -105,16 +109,14 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             major = endian_change_u16(ibeacon_data->ibeacon_vendor.major);
             minor = endian_change_u16(ibeacon_data->ibeacon_vendor.minor);
             memcpy(proximity_uuid,ibeacon_data->ibeacon_vendor.proximity_uuid,DB_UUID_LENGTH_IN_BYTE);
-            isBeacon = 1;
         } else {
-          // ESP_LOGE(DEMO_TAG, "Kein iBeacon");
+          ESP_LOGI(DEMO_TAG, "Found other advertisement!");
           memset(proximity_uuid, 0, DB_UUID_LENGTH_IN_BYTE);
           memcpy(proximity_uuid,scan_result->scan_rst.bda,6);
         }
-        /*ESP_LOGI(DEMO_TAG, "---------- BT device found----------");
-        esp_log_buffer_hex("IBEACON_DEMO: Device address:", scan_result->scan_rst.bda, BD_ADDR_LEN );
-        ESP_LOGI(DEMO_TAG, "RSSI of packet:%d dbm", scan_result->scan_rst.rssi);*/
-        db_add(scan_result->scan_rst.rssi,remoteRssi,major,minor,proximity_uuid,isBeacon);
+        memcpy(mac_address, scan_result->scan_rst.bda, 6);
+
+        db_add(mac_address, scan_result->scan_rst.rssi, remoteRssi, major, minor, proximity_uuid, isBeacon);
         break;
     }
 
