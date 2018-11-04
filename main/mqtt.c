@@ -98,7 +98,7 @@ void mqtt_publish(uint8_t mac_id[6], char* message){
     char mac_str[18];
     mac2str(mac_id, mac_str);
     time_str(time_buf);
-    sprintf(topic_name, "/JellingStone/%s", mac_str);
+    sprintf(topic_name, "JellingStone/%s", mac_str);
 
 #ifdef CONFIG_MQTT_COMPRESSION
     z_stream strm;

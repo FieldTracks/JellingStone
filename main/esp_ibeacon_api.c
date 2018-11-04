@@ -20,6 +20,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "esp_log.h"
 
 #include "esp_gap_ble_api.h"
 #include "esp_ibeacon_api.h"
@@ -52,6 +53,9 @@ void ibeacon_init(){
 
 int esp_ble_is_ibeacon_packet (uint8_t *adv_data, uint8_t adv_data_len){
     int result = 0;
+
+    // Debugging things
+    //ESP_LOGI("esp_ibeacon_api.c", "Data length: %02x  Header: %02x %02x %02x %02x %02x %02x %02x %02x %02x", adv_data_len, adv_data[0], adv_data[1], adv_data[2], adv_data[3], adv_data[4], adv_data[5], adv_data[6], adv_data[7], adv_data[8]);
 
     if ((adv_data != NULL) && (adv_data_len == 0x1E)){
         if (!memcmp(adv_data, (uint8_t*)&ibeacon_common_head, sizeof(ibeacon_common_head))){
