@@ -3,6 +3,9 @@ wifi_config,namespace,,
 ssid,data,string,<ssid>
 pass,data,string,<pass>
 mqtt_config,namespace,,
+# Dev: uri,data,string,mqtts://dev.fieldtracks.org:1882
+# Test: uri,data,string,mqtts://test.fieldtracks.org:1883
+# Prod: uri,data,string,mqtts://prod.fieldtracks.org:1884
 uri,data,string,<uri>
 user,data,string,<user>
 pass,data,string,<pass>

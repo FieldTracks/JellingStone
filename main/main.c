@@ -75,7 +75,7 @@ void init(){
         return;
     }
 
-    if ((ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM)) != ESP_OK) {
+    if ((ret = esp_bt_controller_enable(ESP_BT_MODE_BLE)) != ESP_OK) {
         ESP_LOGE(MY_TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(ret));
         return;
     }
@@ -103,11 +103,18 @@ void app_main()
   }
   ESP_ERROR_CHECK( ret );
   status_booting();
+  ESP_LOGI(MY_TAG, "NVS init");
+
   nvs_init();
+  ESP_LOGI(MY_TAG, "Start wifi init");
   start_wifi();
+  ESP_LOGI(MY_TAG, "Obtain Time");
   obtain_time();
+  ESP_LOGI(MY_TAG, "Start mqtt");
   mqtt_start();
+  ESP_LOGI(MY_TAG, "Init");
   init();
+  ESP_LOGI(MY_TAG, "init BLE");
   ble_init();
   while(1){
     ESP_LOGI(MY_TAG, "Starting BLE - scan + beacon for %d seconds", get_ble_scan_interval());

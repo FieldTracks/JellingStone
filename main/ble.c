@@ -54,7 +54,8 @@ static esp_ble_scan_params_t ble_scan_params = {
     .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
     .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
     .scan_interval          = 0x0500,
-    .scan_window            = 0x0450
+    .scan_window            = 0x0450,
+    .scan_duplicate         = BLE_SCAN_DUPLICATE_DISABLE
 };
 
 static esp_ble_adv_params_t ble_adv_params = {
