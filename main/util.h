@@ -8,3 +8,4 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "esp_gap_ble_api.h"
 void mac2str(uint8_t p[6], char dest[18]);
 void uuid2str(uint8_t *uuid, char dest[48]);
+void uuid2strBLE(uint8_t *uuid, char dest[48]);

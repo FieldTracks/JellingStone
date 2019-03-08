@@ -72,7 +72,7 @@ char *db_dump_flush(char *timestmp) {
   char mac_str[48];
 
   uint8_t uuid[] = ESP_UUID;
-  uuid2str(uuid, uuid_str);
+  uuid2strBLE(uuid, uuid_str);
   cJSON_AddItemToObject(devices, "uuid", cJSON_CreateString(uuid_str));
   cJSON_AddItemToObject(devices, "major", cJSON_CreateNumber(get_ble_major()));
   cJSON_AddItemToObject(devices, "minor", cJSON_CreateNumber(get_ble_minor()));
