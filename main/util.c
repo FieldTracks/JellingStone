@@ -22,7 +22,7 @@ void uuid2str(uint8_t *p, char dest[48]){
           p[12], p[13], p[14], p[15]);
 }
 
-void uuid2strBLE(uint8_t p[6], char dest[18]){
+void mac2strBLE(uint8_t p[6], char dest[18]){
   sprintf(dest, "%02x:%02x:%02x:%02x:%02x:%02x",
           p[0], p[1], p[2], p[3], p[4], p[5] + 2);
 }

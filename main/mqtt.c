@@ -96,7 +96,7 @@ void mqtt_publish(uint8_t mac_id[6], char* message){
     char time_buf[128];
     char topic_name[32];
     char mac_str[18];
-    mac2str(mac_id, mac_str);
+    mac2strBLE(mac_id, mac_str);
     time_str(time_buf);
     sprintf(topic_name,"JellingStone/%s",mac_str);
 
