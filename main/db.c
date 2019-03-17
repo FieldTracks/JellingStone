@@ -78,6 +78,8 @@ char *db_dump_flush(char *timestmp) {
   cJSON_AddItemToObject(devices, "minor", cJSON_CreateNumber(get_ble_minor()));
   cJSON_AddItemToObject(devices, "timestamp", cJSON_CreateString(timestmp));
   cJSON_AddItemToObject(devices, "comment", cJSON_CreateString(get_device_comment()));
+  cJSON_AddItemToObject(devices, "interval", cJSON_CreateNumber(get_ble_scan_interval()));
+
   cJSON_AddItemToObject(devices, "data", data);
 
   for(int i = 0; i < cnt; i++){
