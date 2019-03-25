@@ -9,4 +9,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 /**
   Connect to wifi, obain an IP-Adress
 */
+#include "esp_wifi_types.h"
 void start_wifi();
+void status_wifi(wifi_ap_record_t *ap_info);

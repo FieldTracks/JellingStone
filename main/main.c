@@ -55,11 +55,13 @@ static char *MY_TAG ="main.c";
 int cnt=0;
 
 void dump_scanning_result(){
+  wifi_ap_record_t ap_info;
+  status_wifi(&ap_info);
   char time_buf[128];
   uint8_t mac[6];
   esp_efuse_mac_get_default(mac);
   time_str(time_buf);
-  char *message = db_dump_flush(time_buf);
+  char *message = db_dump_flush(time_buf, &ap_info);
   mqtt_publish(mac, message);
   ESP_LOGE(MY_TAG, "Got database: %s", message);
 

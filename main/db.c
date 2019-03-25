@@ -65,12 +65,14 @@ void db_add(uint8_t *mac_address, int rssi, int remoteRssi, uint16_t major, uint
 /**
 Dumps database to pointer
 */
-char *db_dump_flush(char *timestmp) {
+char *db_dump_flush(char *timestmp, wifi_ap_record_t *wifi_data ) {
   cJSON *devices = cJSON_CreateObject();
   cJSON *data = cJSON_CreateArray();
   char uuid_str[48];
   char mac_str[48];
 
+
+  
   uint8_t uuid[] = ESP_UUID;
   uuid2str(uuid, uuid_str);
   cJSON_AddItemToObject(devices, "uuid", cJSON_CreateString(uuid_str));
@@ -79,6 +81,13 @@ char *db_dump_flush(char *timestmp) {
   cJSON_AddItemToObject(devices, "timestamp", cJSON_CreateString(timestmp));
   cJSON_AddItemToObject(devices, "comment", cJSON_CreateString(get_device_comment()));
   cJSON_AddItemToObject(devices, "interval", cJSON_CreateNumber(get_ble_scan_interval()));
+
+  // Wifi data
+  char bssid[48];
+  mac2str(wifi_data->bssid, bssid);
+  cJSON_AddItemToObject(devices, "wifi_bssid", cJSON_CreateString(bssid));
+  cJSON_AddItemToObject(devices, "wifi_channel", cJSON_CreateNumber(wifi_data->primary));
+  cJSON_AddItemToObject(devices, "wifi_rssi", cJSON_CreateNumber(wifi_data->rssi));
 
   cJSON_AddItemToObject(devices, "data", data);
 

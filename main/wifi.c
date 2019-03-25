@@ -70,7 +70,7 @@ void start_wifi()
             .password = "",
         },
     };
-    
+
     strcpy((char *)wifi_config.sta.ssid, get_wifi_ssid());
     strcpy((char *)wifi_config.sta.password, get_wifi_pass());
 
@@ -80,4 +80,8 @@ void start_wifi()
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_LOGI(TAG, "Waiting for wifi");
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
+}
+
+void status_wifi(wifi_ap_record_t  *ap_info) {
+  esp_wifi_sta_get_ap_info(ap_info);
 }
