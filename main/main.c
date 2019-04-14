@@ -59,7 +59,7 @@ void dump_scanning_result(){
   status_wifi(&ap_info);
   char time_buf[128];
   uint8_t mac[6];
-  esp_efuse_mac_get_default(mac);
+  memcpy(mac,esp_bt_dev_get_address(),6);
   time_str(time_buf);
   char *message = db_dump_flush(time_buf, &ap_info);
   mqtt_publish(mac, message);
