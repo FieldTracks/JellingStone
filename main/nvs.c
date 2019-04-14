@@ -67,7 +67,7 @@ char* get_wifi_ssid(){
 
 char* get_wifi_pass(){
     if(wifi_pass == NULL){
-        wifi_pass = get_string_from_nvs(wifi, "pass");
+        wifi_pass = get_string_from_nvs(wifi, "psk");
     }
     return wifi_pass;
 }

@@ -1,7 +1,7 @@
 key,type,encoding,value
 wifi_config,namespace,,
 ssid,data,string,<ssid>
-pass,data,string,<pass>
+psk,data,string,<pass>
 mqtt_config,namespace,,
 # Dev: uri,data,string,mqtts://dev.fieldtracks.org:1882
 # Test: uri,data,string,mqtts://test.fieldtracks.org:1883
