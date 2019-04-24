@@ -12,6 +12,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "cJSON.h"
 #include "util.h"
 #include "nvs.h"
+#include "esp_timer.h"
 
 #include "esp_ibeacon_api.h"
 
@@ -72,7 +73,7 @@ char *db_dump_flush(char *timestmp, wifi_ap_record_t *wifi_data ) {
   char mac_str[48];
 
 
-  
+
   uint8_t uuid[] = ESP_UUID;
   uuid2str(uuid, uuid_str);
   cJSON_AddItemToObject(devices, "uuid", cJSON_CreateString(uuid_str));
@@ -81,6 +82,7 @@ char *db_dump_flush(char *timestmp, wifi_ap_record_t *wifi_data ) {
   cJSON_AddItemToObject(devices, "timestamp", cJSON_CreateString(timestmp));
   cJSON_AddItemToObject(devices, "comment", cJSON_CreateString(get_device_comment()));
   cJSON_AddItemToObject(devices, "interval", cJSON_CreateNumber(get_ble_scan_interval()));
+  cJSON_AddItemToObject(devices, "uptime", cJSON_CreateNumber(esp_timer_get_time() / 1000 / 1000));
 
   // Wifi data
   char bssid[48];
