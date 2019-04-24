@@ -20,7 +20,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "nvs_flash.h"
 
 #include "lwip/err.h"
-#include "apps/sntp/sntp.h"
+#include "lwip/apps/sntp.h"
 
 static const char *TAG = "ntp.c";
 
@@ -34,7 +34,7 @@ void time_str(char dest[128]){
   time(&now);
   localtime_r(&now, &timeinfo);
   strftime(dest, 127, "%FT%TZ", &timeinfo);
-  ESP_LOGI(TAG, "The current date/time UTC is: %s", dest);
+   //ESP_LOGI(TAG, "The current date/time UTC is: %s", dest);
 
 }
 

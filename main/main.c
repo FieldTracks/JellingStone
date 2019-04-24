@@ -63,7 +63,7 @@ void dump_scanning_result(){
   time_str(time_buf);
   char *message = db_dump_flush(time_buf, &ap_info);
   mqtt_publish(mac, message);
-  ESP_LOGE(MY_TAG, "Got database: %s", message);
+  // ESP_LOGE(MY_TAG, "Got database: %s", message);
 
   free(message);
 }
@@ -119,15 +119,13 @@ void app_main()
   ESP_LOGI(MY_TAG, "init BLE");
   ble_init();
   while(1){
-    ESP_LOGI(MY_TAG, "Starting BLE - scan + beacon for %d seconds", get_ble_scan_interval());
     ble_start();
     vTaskDelay(get_ble_scan_interval() * 1000 / portTICK_PERIOD_MS);
-    ESP_LOGI(MY_TAG, "Stopping BLE ");
     ble_stop();
     //ESP_LOGI(MY_TAG, "BT Classic device scan for 5 seconds");
     //bt_classic_discover(5);
     //vTaskDelay(5 * 1010 / portTICK_PERIOD_MS);
+    ESP_LOGI(MY_TAG, "Submitting results");
     dump_scanning_result();
-    ESP_LOGI(MY_TAG, "Done");
   }
 }

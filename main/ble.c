@@ -102,7 +102,6 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         uint8_t isBeacon = esp_ble_is_ibeacon_packet(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len);
 
         if (isBeacon){
-            ESP_LOGI(DEMO_TAG, "Found iBeacon!");
             esp_ble_ibeacon_t *ibeacon_data = (esp_ble_ibeacon_t*)(scan_result->scan_rst.ble_adv);
             //esp_log_buffer_hex("IBEACON_DEMO: Device address:", scan_result->scan_rst.bda, ESP_BD_ADDR_LEN );
             //esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
@@ -111,7 +110,6 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             minor = endian_change_u16(ibeacon_data->ibeacon_vendor.minor);
             memcpy(proximity_uuid,ibeacon_data->ibeacon_vendor.proximity_uuid,DB_UUID_LENGTH_IN_BYTE);
         } else {
-          ESP_LOGI(DEMO_TAG, "Found other advertisement!");
           memset(proximity_uuid, 0, DB_UUID_LENGTH_IN_BYTE);
           memcpy(proximity_uuid,scan_result->scan_rst.bda,6);
         }
@@ -126,7 +124,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             ESP_LOGE(DEMO_TAG, "Scan stop failed");
         }
         else {
-            ESP_LOGI(DEMO_TAG, "Stop scan successfully");
+            //ESP_LOGI(DEMO_TAG, "Stop scan successfully");
         }
         break;
 
