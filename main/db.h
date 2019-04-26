@@ -11,4 +11,4 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "esp_wifi_types.h"
 
 void db_add(uint8_t *mac_address, int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *proximity_uuid,uint8_t isBeacon);
-char *db_dump_flush(char *timestmp, wifi_ap_record_t *ap_info);
+char *db_dump_flush(char *timestmp);

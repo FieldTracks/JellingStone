@@ -29,6 +29,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "freertos/task.h"
 #include "esp_bt.h"
 #include "esp_bt_main.h"
+#include "mqtt_status.h"
 
 #include "esp_gap_ble_api.h"
 #include "esp_gattc_api.h"
@@ -55,13 +56,11 @@ static char *MY_TAG ="main.c";
 int cnt=0;
 
 void dump_scanning_result(){
-  wifi_ap_record_t ap_info;
-  status_wifi(&ap_info);
   char time_buf[128];
   uint8_t mac[6];
   memcpy(mac,esp_bt_dev_get_address(),6);
   time_str(time_buf);
-  char *message = db_dump_flush(time_buf, &ap_info);
+  char *message = db_dump_flush(time_buf);
   mqtt_publish(mac, message);
   // ESP_LOGE(MY_TAG, "Got database: %s", message);
 
@@ -96,6 +95,7 @@ void init(){
 
 }
 
+
 void app_main()
 {
   esp_err_t ret = nvs_flash_init();
@@ -106,8 +106,9 @@ void app_main()
   ESP_ERROR_CHECK( ret );
   status_booting();
   ESP_LOGI(MY_TAG, "NVS init");
-
   nvs_init();
+  ESP_LOGE(MY_TAG, "stone = {'major':'%d', 'minor': '%d', 'comment':'%s'}",get_ble_major(),get_ble_minor(),get_device_comment());
+
   ESP_LOGI(MY_TAG, "Start wifi init");
   start_wifi();
   ESP_LOGI(MY_TAG, "Obtain Time");
@@ -119,6 +120,7 @@ void app_main()
   ESP_LOGI(MY_TAG, "init BLE");
   ble_init();
   while(1){
+    mqtt_status_transmit();
     ble_start();
     vTaskDelay(get_ble_scan_interval() * 1000 / portTICK_PERIOD_MS);
     ble_stop();

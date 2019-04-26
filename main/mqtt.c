@@ -29,6 +29,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "ntp.h"
 #include "status.h"
 #include "nvs.h"
+#include "mqtt.h"
 
 #include "lib/zlib/zlib.h"
 
@@ -95,13 +96,16 @@ void mqtt_start()
     esp_mqtt_client_start(client);
 }
 
-void mqtt_publish(uint8_t mac_id[6], char* message){
-    char time_buf[128];
+void mqtt_publish(uint8_t mac_id[6], char* message) {
+  char mac_str[18];
+  mac2strBLE(mac_id, mac_str);
+  mqtt_publish_msg(mac_str,message);
+
+}
+
+void mqtt_publish_msg(char *channel, char* message) {
     char topic_name[32];
-    char mac_str[18];
-    mac2strBLE(mac_id, mac_str);
-    time_str(time_buf);
-    sprintf(topic_name,"JellingStone/%s",mac_str);
+    sprintf(topic_name,"JellingStone/%s",channel);
 
 #ifdef CONFIG_MQTT_COMPRESSION
     z_stream strm;
@@ -127,7 +131,7 @@ void mqtt_publish(uint8_t mac_id[6], char* message){
 
     int cmp_status = deflate(&strm, Z_FINISH);
     if(cmp_status == Z_STREAM_END) {
-        int msg_id = esp_mqtt_client_publish(client, topic_name, (const char *) cmp_buffer, (int) cmp_len, 0, 0);
+        esp_mqtt_client_publish(client, topic_name, (const char *) cmp_buffer, (int) cmp_len, 0, 0);
         ESP_LOGI(TAG, "Sent compressed message via MQTT, ratio=%d%%, msg_id=%d", (int) (((double) src_len / (double) strm.total_out) * 100), msg_id);
         status_ack_sent();
     } else {
@@ -141,7 +145,7 @@ void mqtt_publish(uint8_t mac_id[6], char* message){
     deflateEnd(&strm);
     free(cmp_buffer);
 #else
-    int msg_id = esp_mqtt_client_publish(client, topic_name, message, 0, 0, 0);
+    esp_mqtt_client_publish(client, topic_name, message, 0, 0, 0);
     status_ack_sent();
 #endif
 }
