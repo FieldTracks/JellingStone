@@ -120,6 +120,7 @@ void app_main()
   ESP_LOGI(MY_TAG, "init BLE");
   ble_init();
   while(1){
+    char t[128];
     mqtt_status_transmit();
     ble_start();
     vTaskDelay(get_ble_scan_interval() * 1000 / portTICK_PERIOD_MS);
@@ -127,7 +128,8 @@ void app_main()
     //ESP_LOGI(MY_TAG, "BT Classic device scan for 5 seconds");
     //bt_classic_discover(5);
     //vTaskDelay(5 * 1010 / portTICK_PERIOD_MS);
-    ESP_LOGI(MY_TAG, "Submitting results");
+    time_str(t);
+    ESP_LOGE(MY_TAG, "submitting: {'time': '%s','major':'%d', 'minor': '%d', 'comment':'%s'}",t,get_ble_major(),get_ble_minor(),get_device_comment());
     dump_scanning_result();
   }
 }

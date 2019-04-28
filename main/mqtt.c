@@ -98,14 +98,14 @@ void mqtt_start()
 
 void mqtt_publish(uint8_t mac_id[6], char* message) {
   char mac_str[18];
+  char topic_name[32];
   mac2strBLE(mac_id, mac_str);
-  mqtt_publish_msg(mac_str,message);
+  sprintf(topic_name,"JellingStone/%s",mac_str);
+  mqtt_publish_msg(topic_name,message);
 
 }
 
 void mqtt_publish_msg(char *channel, char* message) {
-    char topic_name[32];
-    sprintf(topic_name,"JellingStone/%s",channel);
 
 #ifdef CONFIG_MQTT_COMPRESSION
     z_stream strm;
@@ -131,7 +131,7 @@ void mqtt_publish_msg(char *channel, char* message) {
 
     int cmp_status = deflate(&strm, Z_FINISH);
     if(cmp_status == Z_STREAM_END) {
-        esp_mqtt_client_publish(client, topic_name, (const char *) cmp_buffer, (int) cmp_len, 0, 0);
+        esp_mqtt_client_publish(client, channel, (const char *) cmp_buffer, (int) cmp_len, 0, 0);
         ESP_LOGI(TAG, "Sent compressed message via MQTT, ratio=%d%%, msg_id=%d", (int) (((double) src_len / (double) strm.total_out) * 100), msg_id);
         status_ack_sent();
     } else {
@@ -145,7 +145,7 @@ void mqtt_publish_msg(char *channel, char* message) {
     deflateEnd(&strm);
     free(cmp_buffer);
 #else
-    esp_mqtt_client_publish(client, topic_name, message, 0, 0, 0);
+    esp_mqtt_client_publish(client, channel, message, 0, 0, 0);
     status_ack_sent();
 #endif
 }

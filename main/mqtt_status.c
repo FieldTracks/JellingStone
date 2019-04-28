@@ -40,7 +40,7 @@ void mqtt_status_transmit(){
 
   char *message = cJSON_Print(status);
   cJSON_Delete(status);
-  mqtt_publish_msg("status",message);
+  mqtt_publish_msg("JellingStoneStatus",message);
 
   free(message);
 }
