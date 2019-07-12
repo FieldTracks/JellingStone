@@ -28,6 +28,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "lwip/dns.h"
 #include "lwip/netdb.h"
 #include "status.h"
+#include "mqtt.h"
 
 static EventGroupHandle_t wifi_event_group;
 const static int CONNECTED_BIT = BIT0;
@@ -43,6 +44,10 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
         case SYSTEM_EVENT_STA_GOT_IP:
             xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
             status_set(STATUS_WIFI_CONNECTED);
+            mqtt_restart();
+            break;
+        case SYSTEM_EVENT_STA_CONNECTED:
+            mqtt_restart();
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
             status_set(STATUS_WIFI_DISCONNECTED);

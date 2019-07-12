@@ -96,6 +96,11 @@ void mqtt_start()
     esp_mqtt_client_start(client);
 }
 
+void mqtt_restart(){
+  esp_mqtt_client_stop(client);
+  esp_mqtt_client_start(client);
+}
+
 void mqtt_publish(uint8_t mac_id[6], char* message) {
   char mac_str[18];
   char topic_name[32];
