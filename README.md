@@ -23,6 +23,22 @@ This will not run automatically during `make flash`.
 NOTE: The path to the certificate must be an absolute path
 IMPORTANT: If the offset of the nvs partition gets updated the offset in the Makefile needs to be updated as well
 
+## Release
+
+As of 1.0.0 binary releases are available at [https://fieldtracks.org/JellingStone/release](https://fieldtracks.org/JellingStone/release).
+Flashing does not require building the software; however, nvs_data.csv must be converted into a working flash partition. Flashing can be done using esptool:
+
+```bash
+esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader.bin 0x10000 jellingstone.bin 0x8000 partitions.bin
+```
+
+Creating and flashing the NVS partition is done using::
+```bash
+nvs_partition_gen.py --input nvs_data.csv --output build/nvs.bin --size 2457
+esptool.py write_flash 0x9000 build/nvs.bin
+```
+
+
 ## License
 This file is part of JellingStone - (C) The Fieldtracks Project
 
