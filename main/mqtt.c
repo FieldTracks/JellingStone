@@ -82,18 +82,20 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 static esp_mqtt_client_handle_t client;
 void mqtt_start()
 {
-    const esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = get_mqtt_uri(),
-        .event_handle = mqtt_event_handler,
-        .cert_pem = get_mqtt_cert(),
-        .username = get_mqtt_user(),
-        .password = get_mqtt_pass(),
-
-        // .user_context = (void *)your_context
-    };
-
-    client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_start(client);
+}
+
+void mqtt_init() {
+  const esp_mqtt_client_config_t mqtt_cfg = {
+      .uri = get_mqtt_uri(),
+      .event_handle = mqtt_event_handler,
+      .cert_pem = get_mqtt_cert(),
+      .username = get_mqtt_user(),
+      .password = get_mqtt_pass(),
+
+      // .user_context = (void *)your_context
+  };
+  client = esp_mqtt_client_init(&mqtt_cfg);
 }
 
 void mqtt_restart(){

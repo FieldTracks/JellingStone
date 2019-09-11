@@ -107,8 +107,11 @@ void app_main()
   status_booting();
   ESP_LOGI(MY_TAG, "NVS init");
   nvs_init();
+  ESP_LOGI(MY_TAG, "MQTT init");
+  mqtt_init();
+
   ESP_LOGE(MY_TAG, "stone = {'major':'%d', 'minor': '%d', 'comment':'%s'}",get_ble_major(),get_ble_minor(),get_device_comment());
-  mqtt_start();
+  //mqtt_start();
   ESP_LOGI(MY_TAG, "Start wifi init");
   start_wifi();
   ESP_LOGI(MY_TAG, "Obtain Time");

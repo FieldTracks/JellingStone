@@ -7,6 +7,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 */
 void mqtt_start();
 void mqtt_restart();
-
+void mqtt_init();
 void mqtt_publish(uint8_t mac_id[6], char* message);
 void mqtt_publish_msg(char *channel, char* message);

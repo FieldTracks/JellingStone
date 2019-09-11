@@ -35,6 +35,8 @@ const static int CONNECTED_BIT = BIT0;
 
 static const char *TAG = "wifi.c";
 
+// const int gotIp = 0;
+
 static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 {
     switch (event->event_id) {
