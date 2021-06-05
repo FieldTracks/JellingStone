@@ -6,9 +6,12 @@ This file is part of JellingStone - (C) The Fieldtracks Project
     If not, please contact info@fieldtracks.org
 */
 
-#define DB_UUID_LENGTH_IN_BYTE 16
+#define DB_NETWORK_ID_LENGTH_IN_BYTE 10
+#define DB_BEACON_ID_LENGTH_IN_BYTE 6
 #include "esp_gap_ble_api.h"
 #include "esp_wifi_types.h"
 
-void db_add(uint8_t *mac_address, int rssi, int remoteRssi, uint16_t major, uint16_t minor, uint8_t *proximity_uuid,uint8_t isBeacon);
-char *db_dump_flush(char *timestmp);
+void db_add_mac(uint8_t *mac_address, int rssi);
+void db_add_eddystone_uid(uint8_t *mac_address, int rssi, uint8_t *network_id,  uint8_t *beacon_id);
+
+char *db_dump_flush(char *timestmp, uint8_t *own_ble_mac_address);

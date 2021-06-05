@@ -9,16 +9,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 */
 
 
-
-/****************************************************************************
-*
-* This file is for iBeacon APIs. It supports both iBeacon encode and decode.
-*
-* iBeacon is a trademark of Apple Inc. Before building devices which use iBeacon technology,
-* visit https://developer.apple.com/ibeacon/ to obtain a license.
-*
-****************************************************************************/
-
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
@@ -31,10 +21,12 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "esp_gatt_defs.h"
 #include "esp_bt_main.h"
 #include "esp_ibeacon_api.h"
+#include "esp_eddystone_protocol.h"
+#include "esp_eddystone_api.h"
 #include "esp_log.h"
 //#include "common/ringbuf.h"
 
-static const char* DEMO_TAG = "ibeacon.c";
+static const char* DEMO_TAG = "ble.c";
 extern esp_ble_ibeacon_vendor_t vendor_config;
 
 ///Declare static functions
@@ -92,30 +84,28 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         }
         break;
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
-        uint8_t mac_address[6] = {0};
-        int remoteRssi = 0;
-        uint16_t major = 0;
-        uint16_t minor = 0;
-        uint8_t proximity_uuid[DB_UUID_LENGTH_IN_BYTE];
+        ESP_LOGE(DEMO_TAG, "Got device");
+        esp_ble_gap_cb_param_t* scan_result = (esp_ble_gap_cb_param_t*)param;
+        uint8_t *mac_address = scan_result->scan_rst.bda;
+        int rssi = scan_result->scan_rst.rssi;
 
-        esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
-        uint8_t isBeacon = esp_ble_is_ibeacon_packet(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len);
 
-        if (isBeacon){
-            esp_ble_ibeacon_t *ibeacon_data = (esp_ble_ibeacon_t*)(scan_result->scan_rst.ble_adv);
-            //esp_log_buffer_hex("IBEACON_DEMO: Device address:", scan_result->scan_rst.bda, ESP_BD_ADDR_LEN );
-            //esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
-            remoteRssi = ibeacon_data->ibeacon_vendor.measured_power;
-            major = endian_change_u16(ibeacon_data->ibeacon_vendor.major);
-            minor = endian_change_u16(ibeacon_data->ibeacon_vendor.minor);
-            memcpy(proximity_uuid,ibeacon_data->ibeacon_vendor.proximity_uuid,DB_UUID_LENGTH_IN_BYTE);
+        esp_eddystone_result_t eddystone_res;
+        memset(&eddystone_res, 0, sizeof(eddystone_res));
+        esp_err_t ret = esp_eddystone_decode(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len, &eddystone_res);
+        int isEddystone_uid = !ret && eddystone_res.common.frame_type == EDDYSTONE_FRAME_TYPE_UID;
+        // TODO Emphemeral IDs  (EID-Frames)?
+        // Let's have smartphones and stones broadcast UIDs
+        // Let's have EID-frames as a later option
+
+        if(isEddystone_uid) {
+            uint8_t *network_id = eddystone_res.inform.uid.namespace_id;
+            uint8_t *beacon_id = eddystone_res.inform.uid.instance_id;
+            db_add_eddystone_uid(mac_address, rssi, network_id,beacon_id);
         } else {
-          memset(proximity_uuid, 0, DB_UUID_LENGTH_IN_BYTE);
-          memcpy(proximity_uuid,scan_result->scan_rst.bda,6);
+          db_add_mac(mac_address, rssi);
         }
-        memcpy(mac_address, scan_result->scan_rst.bda, 6);
 
-        db_add(mac_address, scan_result->scan_rst.rssi, remoteRssi, major, minor, proximity_uuid, isBeacon);
         break;
     }
 

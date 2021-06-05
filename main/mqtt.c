@@ -36,6 +36,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 static const char *TAG = "mqtt.c";
 
 int msgid=0;
+static esp_mqtt_client_handle_t client;
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 {
@@ -50,6 +51,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
             status_set(STATUS_MQTT_DISCONNECTED);
+            mqtt_restart();
             break;
         case MQTT_EVENT_SUBSCRIBED:
             ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
@@ -79,7 +81,6 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 {
 }
 */
-static esp_mqtt_client_handle_t client;
 void mqtt_start()
 {
     esp_mqtt_client_start(client);
@@ -119,7 +120,7 @@ void mqtt_publish_msg(char *channel, char* message) {
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
-    deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 11, 5, Z_DEFAULT_STRATEGY);
+    deflateInit2(&strm, Z_BEST_COMPRESSION, Z_DEFLATED, 11, 5, Z_DEFAULT_STRATEGY);
 
     unsigned long src_len = strlen(message);
     unsigned long cmp_len = deflateBound(&strm, src_len);
@@ -138,8 +139,8 @@ void mqtt_publish_msg(char *channel, char* message) {
 
     int cmp_status = deflate(&strm, Z_FINISH);
     if(cmp_status == Z_STREAM_END) {
-        esp_mqtt_client_publish(client, channel, (const char *) cmp_buffer, (int) cmp_len, 0, 0);
-        ESP_LOGI(TAG, "Sent compressed message via MQTT, ratio=%d%%, msg_id=%d", (int) (((double) src_len / (double) strm.total_out) * 100), msg_id);
+        int msg_id = esp_mqtt_client_publish(client, channel, (const char *) cmp_buffer, (int) strm.total_out, 1, 0);
+        ESP_LOGI(TAG, "Sent compressed message via MQTT, ratio=%d%%, msg_id=%d, magic_byte=%02X", (int) (((double) strm.total_out / (double) src_len) * 100), msg_id,cmp_buffer[0]);
         status_ack_sent();
     } else {
         ESP_LOGE(TAG, "Failed to compress message! Error code: %d", cmp_status);
@@ -152,7 +153,7 @@ void mqtt_publish_msg(char *channel, char* message) {
     deflateEnd(&strm);
     free(cmp_buffer);
 #else
-    esp_mqtt_client_publish(client, channel, message, 0, 0, 0);
+    esp_mqtt_client_publish(client, channel, message, 0, 1, 0);
     status_ack_sent();
 #endif
 }

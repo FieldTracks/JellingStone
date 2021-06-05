@@ -55,12 +55,11 @@ static char *MY_TAG ="main.c";
 
 int cnt=0;
 
+uint8_t mac[6];
 void dump_scanning_result(){
   char time_buf[128];
-  uint8_t mac[6];
-  memcpy(mac,esp_bt_dev_get_address(),6);
   time_str(time_buf);
-  char *message = db_dump_flush(time_buf);
+  char *message = db_dump_flush(time_buf, mac);
   mqtt_publish(mac, message);
   // ESP_LOGE(MY_TAG, "Got database: %s", message);
 
@@ -69,6 +68,7 @@ void dump_scanning_result(){
 
 /** Initialize flash, Bluetooth for classic and BLE */
 void init(){
+
   esp_err_t ret;
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     if ((ret = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
@@ -120,6 +120,8 @@ void app_main()
   init();
   ESP_LOGI(MY_TAG, "init BLE");
   ble_init();
+  memcpy(mac,esp_bt_dev_get_address(),6);
+
   while(1){
     char t[128];
     mqtt_status_transmit();

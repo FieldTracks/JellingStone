@@ -49,7 +49,7 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
             mqtt_restart();
             break;
         case SYSTEM_EVENT_STA_CONNECTED:
-            mqtt_restart();
+            // mqtt_restart();
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
             status_set(STATUS_WIFI_DISCONNECTED);
