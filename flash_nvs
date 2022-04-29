@@ -1,0 +1,3 @@
+#!/bin/bash
+python /home/jan/esp/esp-idf/components/nvs_flash/nvs_partition_generator/nvs_partition_gen.py  generate nvs_data.csv nvs.bin 0x3000
+esptool.py write_flash 0x9000 nvs.bin

@@ -5,73 +5,13 @@
 //
 static const char *TAG = "js_nvs";
 
-#define WLAN_SSID_IDX 0
-#define WLAN_PSK_IDX 1
-#define MQTT_URL_IDX 2
-#define MQTT_USER_IDX 3
-#define MQTT_PWD_IDX 4
-#define BEACON_ID_IDX 5
-char *js_nvs_mqtt_data[6];
-
-uint32_t js_nvs_beacon_interval_ms = -1;
-uint32_t js_nvs_scan_interval_ms = -1;
-
-uint8_t *js_nvs_wlan_ssid() {
-    return (uint8_t *) js_nvs_mqtt_data[WLAN_SSID_IDX];
-}
-
-uint8_t *js_nvs_wlan_psk() {
-    return (uint8_t *) js_nvs_mqtt_data[WLAN_PSK_IDX];
-}
-
-char *js_nvs_mqtt_url() {
-    return js_nvs_mqtt_data[MQTT_URL_IDX];
-}
-char *js_nvs_mqtt_user() {
-    return js_nvs_mqtt_data[MQTT_USER_IDX];
-}
-char *js_nvs_mqtt_pwd() {
-    return js_nvs_mqtt_data[MQTT_PWD_IDX];
-}
-char *js_nvs_beacon_id() {
-    return js_nvs_mqtt_data[BEACON_ID_IDX];
-}
-uint32_t nvs_beacon_interval_ms() {
-    return js_nvs_beacon_interval_ms;
-}
-uint32_t nvs_scan_interval_ms() {
-    return js_nvs_scan_interval_ms;
-}
-
-
-void js_nvs_init_value(nvs_handle_t handle, char *name, uint16_t index) {
-    size_t required_size;
-    esp_err_t err;
-    if(js_nvs_mqtt_data[index] != NULL) {
-        free(js_nvs_mqtt_data[index]);
-    }
-    err = nvs_get_str(handle, name, NULL, &required_size);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error loading NVS configuration for %s - %s",name, esp_err_to_name(err));
-        ESP_ERROR_CHECK(err);
-    }
-    js_nvs_mqtt_data[index] = malloc(required_size);
-    if(js_nvs_mqtt_data[index] == NULL) {
-        err = ESP_ERR_NO_MEM;
-        ESP_LOGE(TAG, "Error loading NVS configuration for %s - %s",name, esp_err_to_name(err));
-        ESP_ERROR_CHECK(err);
-    }
-    err = nvs_get_str(handle, name, js_nvs_mqtt_data[index], &required_size);
-    if(err != ESP_OK) {
-        ESP_LOGE(TAG, "Error loading NVS configuration for %s - %s",name, esp_err_to_name(err));
-        ESP_ERROR_CHECK(err);
-    }
-
-}
+static bool initialized = false;
+static nvs_handle_t nvsHandle;
 
 void js_nvs_init() {
+    initialized = true;
 
-    ESP_LOGI(TAG,"Loading configuration from NVS");
+    ESP_LOGI(TAG, "Loading configuration from NVS");
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         // NVS partition was truncated and needs to be erased
@@ -79,31 +19,52 @@ void js_nvs_init() {
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
-    if(err != ESP_OK) {
+    if (err != ESP_OK) {
         ESP_LOGE(TAG, "Unable to init nvs: %s", esp_err_to_name(err));
-        ESP_ERROR_CHECK( err );
+        ESP_ERROR_CHECK(err);
     }
 
-    nvs_handle_t nvs_handle;
-    if((err = nvs_open("config", NVS_READONLY, &nvs_handle)) != ESP_OK) {
+
+    if ((err = nvs_open("config", NVS_READONLY, &nvsHandle)) != ESP_OK) {
         ESP_LOGE(TAG, "Error opening nvs: %s", esp_err_to_name(err));
-        ESP_ERROR_CHECK( err );
-    }
-    js_nvs_init_value(nvs_handle,"WLAN_SSID",WLAN_SSID_IDX);
-    js_nvs_init_value(nvs_handle,"WLAN_PSK",WLAN_PSK_IDX);
-    js_nvs_init_value(nvs_handle,"MQTT_URL",MQTT_URL_IDX);
-    js_nvs_init_value(nvs_handle,"MQTT_USER",MQTT_USER_IDX);
-    js_nvs_init_value(nvs_handle,"MQTT_PWD",MQTT_PWD_IDX);
-    js_nvs_init_value(nvs_handle,"BEACON_ID",BEACON_ID_IDX);
-
-    if((err = nvs_get_u32(nvs_handle,"BEACON_INT_MS",&js_nvs_beacon_interval_ms)) != ESP_OK) {
-        ESP_LOGE(TAG, "Error loading %s: %s", "BEACON_INT_MS", esp_err_to_name(err));
-        ESP_ERROR_CHECK( err );
-    }
-    if((err = nvs_get_u32(nvs_handle,"SCAN_INT_MS",&js_nvs_scan_interval_ms)) != ESP_OK) {
-        ESP_LOGE(TAG, "Error loading %s: %s", "SCAN_INT_MS", esp_err_to_name(err));
-        ESP_ERROR_CHECK( err );
+        ESP_ERROR_CHECK(err);
     }
 }
 
+void js_nvs_read_str(const char *key, char *out_value, size_t *length) {
+    esp_err_t err;
+    if(!initialized) {
+        js_nvs_init();
+    }
+    err = nvs_get_str(nvsHandle,key,out_value,length) ;
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Unable to retrieve '%s' from NVS: %s", key, esp_err_to_name(err));
+        ESP_ERROR_CHECK(err);
+    }
+}
 
+void js_nvs_read_i32(const char *key, int32_t *out_value, size_t *length) {
+    esp_err_t err;
+    if(!initialized) {
+        js_nvs_init();
+    }
+    err = nvs_get_i32(nvsHandle,key,out_value) ;
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Unable to retrieve '%s' from NVS: %s", key, esp_err_to_name(err));
+        ESP_ERROR_CHECK(err);
+    }
+}
+
+void js_nvs_read_str_uint8_t(const char *key, uint8_t *out_value, size_t *length) {
+    char *out_c = (char *) out_value;
+    return js_nvs_read_str(key, out_c,length);
+}
+
+void js_nvs_wlan_ssid(uint8_t ssid[32]) {
+    size_t length = 32;
+    return js_nvs_read_str_uint8_t("WLAN_SSID",ssid,&length);
+}
+void js_nvs_wlan_psk(uint8_t psk[64]) {
+    size_t length = 64;
+    return js_nvs_read_str_uint8_t("WLAN_PSK",psk,&length);
+}
