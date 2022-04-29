@@ -2,17 +2,8 @@
 # This is a project Makefile. It is assumed the directory this Makefile resides in is a
 # project subdirectory.
 #
+PROJECT_NAME := jelling_stone
 
-PROJECT_NAME := jellingstone
-
-COMPONENT_ADD_INCLUDEDIRS := components/include
+#EXTRA_COMPONENT_DIRS = $(IDF_PATH)/examples/common_components/protocol_examples_common
 
 include $(IDF_PATH)/make/project.mk
-
-flash_nvs: build/nvs.bin
-	python $(IDF_PATH)/components/esptool_py/esptool/esptool.py write_flash 0x9000 build/nvs.bin
-
-build/nvs.bin: nvs_data.csv
-	python $(IDF_PATH)/components/nvs_flash/nvs_partition_generator/nvs_partition_gen.py --input nvs_data.csv --output build/nvs.bin --size 24576
-
-stone: flash_nvs flash
