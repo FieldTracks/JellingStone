@@ -50,7 +50,7 @@ void js_fsm_app_start() {
 }
 
 void js_on_ip_recv() {
-    ESP_LOGI(TAG, "IP-Received");
+    ESP_LOGI(TAG, "IP received");
     if(global_state <= ip_disconnected) {
         global_state = ip_connected;
         js_ntp_obtain_time();
