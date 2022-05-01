@@ -4,12 +4,16 @@ This file is part of JellingStone - (C) The Fieldtracks Project
     You should have received a copy of COSLi along with JellingStone.
     If not, please contact info@fieldtracks.org
 */
-#include <stdint.h>
+#include <string.h>
 
-#ifndef JELLINGSTONE_JS_WLAN_H
-#define JELLINGSTONE_JS_WLAN_H
+#include "esp_log.h"
+#include "js_nvs.h"
+#include "js_wlan.h"
+#include "js_fsm.h"
+static const char *TAG = "app_main";
 
-void js_wlan_connect();
-
-
-#endif //JELLINGSTONE_JS_WLAN_H
+void app_main(void)
+{
+    ESP_LOGI(TAG, "[APP] Startup..");
+    js_fsm_app_start();
+}

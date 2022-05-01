@@ -6,10 +6,15 @@
 #include "js_nvs.h"
 #include "js_wlan.h"
 #include "js_ntp.h"
+#include "js_fsm.h"
 
-//
-// Created by jan on 25/04/2022.
-//
+/*
+This file is part of JellingStone - (C) The Fieldtracks Project
+    JellingStone is distributed under the civilian open source license (COSLi).
+    You should have received a copy of COSLi along with JellingStone.
+    If not, please contact info@fieldtracks.org
+*/
+
 static char *TAG = "js_wlan";
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t js_wlan_event_group;
@@ -19,11 +24,11 @@ static void js_wlan_event_handler(void *arg, esp_event_base_t event_base, int32_
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         ESP_LOGI(TAG, "connect to the AP fail - retrying");
-        esp_wifi_connect();
+        js_on_wlan_disconnected();
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
-        js_ntp_obtain_time();
+        js_on_ip_recv();
     }
 }
 

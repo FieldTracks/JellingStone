@@ -1,8 +1,11 @@
 #include <esp_log.h>
 #include "js_nvs.h"
-//
-// Created by jan on 24/04/2022.
-//
+/*
+This file is part of JellingStone - (C) The Fieldtracks Project
+    JellingStone is distributed under the civilian open source license (COSLi).
+    You should have received a copy of COSLi along with JellingStone.
+    If not, please contact info@fieldtracks.org
+*/
 static const char *TAG = "js_nvs";
 
 static bool initialized = false;
@@ -68,3 +71,24 @@ void js_nvs_wlan_psk(uint8_t psk[64]) {
     size_t length = 64;
     return js_nvs_read_str_uint8_t("WLAN_PSK",psk,&length);
 }
+
+static char* js_nvs_retr_string_2_calls(char *key) {
+    size_t length;
+    js_nvs_read_str(key,NULL,&length);
+    char *ret_val = malloc(length);
+    js_nvs_read_str(key, ret_val, &length);
+    return ret_val;
+}
+char* js_nvs_mqtt_url()  {
+    return js_nvs_retr_string_2_calls("MQTT_URL");
+}
+char* js_nvs_mqtt_user() {
+    return js_nvs_retr_string_2_calls(("MQTT_USER"));
+}
+char* js_nvs_mqtt_password() {
+    return js_nvs_retr_string_2_calls(("MQTT_PWD"));
+}
+char* js_nvs_mqtt_cert() {
+    return js_nvs_retr_string_2_calls(("MQTT_CERT"));
+}
+
