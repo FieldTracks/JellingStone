@@ -11,6 +11,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "js_wlan.h"
 #include "js_ntp.h"
 #include "js_mqtt.h"
+#include "js_ble.h"
 
 static char* TAG = "js_fsm";
 
@@ -25,6 +26,7 @@ static enum state_t {
 
 void js_on_mqtt_connected() {
     global_state = mqtt_connected;
+    js_ble_scan_start(4);
 }
 void js_on_mqtt_disconnected() {
     if(global_state >= mqtt_connected) {
@@ -47,6 +49,7 @@ void js_fsm_app_start() {
     global_state = ip_disconnected;
     js_wlan_connect();
     js_mqtt_init();
+    js_ble_scan_init();
 }
 
 void js_on_ip_recv() {
@@ -59,6 +62,7 @@ void js_on_ip_recv() {
         ESP_LOGI(TAG, "Unknown transition: js_on_ip_recv in state %d", global_state);
     }
 }
+
 void js_on_wlan_disconnected() {
     ESP_LOGI(TAG, "WLAN disconnect in state %d", global_state);
     global_state = ip_disconnected;
