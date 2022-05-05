@@ -40,8 +40,8 @@ static char *TAG = "js_ble";
 static js_ble_beacon_t detect_beacon(uint8_t *rawData, size_t length) {
     if(length > 18) {
         uint8_t *data = rawData;
-        ESP_LOGI(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X",
-                 data[0], data[1], data[2], data[3], data[4],data[5], data[6]);
+        ESP_LOGI(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X data[7]=%02X data[8]=%02X",
+                 data[0], data[1], data[2], data[3], data[4],data[5], data[6],data[7], data[8]);
 
         if (data[0] == 0x03 && data[1] == 0x03 && data[2] == 0xAA && data[3] == 0xFE && data[5] == 0x16 && data[6] == 0xAA && data[7] == 0xFE) {
             if (data[8] == 0x00 && data[4] == 0x15) {
