@@ -14,4 +14,5 @@ void js_on_mqtt_connected();
 void js_on_mqtt_disconnected();
 void js_on_mqtt_published();
 void js_on_mqtt_error();
+void js_on_ble_finished();
 #endif //JELLINGSTONE_JS_FSM_H

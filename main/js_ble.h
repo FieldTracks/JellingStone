@@ -15,8 +15,8 @@ void js_ble_scan_init();
 typedef enum {
     JS_BEACON_NONE = 0,
     JS_BEACON_ALT_BEACON = 1,
-    JS_BEACON_EDDISTONE_EID = 2,
-    JS_BEACON_EDDISTONE_UID = 3
+    JS_BEACON_EDDYSTONE_EID = 2,
+    JS_BEACON_EDDYSTONE_UID = 3
 } js_ble_beacon_t;
 
 /*

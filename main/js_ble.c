@@ -10,63 +10,68 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include "nvs_flash.h"
 
 #include "esp_bt.h"
 #include "esp_gap_ble_api.h"
-#include "esp_gattc_api.h"
-#include "esp_gatt_defs.h"
 #include "esp_bt_main.h"
 #include "esp_bt_defs.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "js_db.h"
-
+#include "js_fsm.h"
+#include "js_util.h"
 /*
 ==============================================================================================================================================
 |         |0   |1   |2   |3   |4   |5   |6   |7   |8   |9   |10 |11 |12 |13 |14 |15 |16 |17 |18 |19 |20 |21 |22 |23 |24 |25 |26 |27 |28 |29 |
-|AltBeacon|0x02|0x01|0x06|len |0xFF|MFG ID...|Code.....|Beacon-ID (20 Byte).............................................................|pwr|
-|Eddy  UID|0x02|0x01|0x06|0xAA|0xFE|len |0x16|0xAA|0xFE|0x00|pwr|Namespace (10 byte)....................|Instance (6 byte)......|
-|Eddy  EID|0x02|0x01|0x06|0xAA|0xFE|len |0x16|0xAA|0xFE|0x30|pwr|8-Byte (EID)...................|
+|AltBeacon|0x1B|0xFF|MFG ID...|Code.....|Beacon-ID (20 Byte)................................................................|pwr|
+|Eddy  UID|0x03|0x03|0xAA|0xFE|len |0x16|0xAA|0xFE|0x00|pwr |Namespace (10 byte)....................|Instance (6 byte)......|
+|Eddy  EID|0x03|0x03|0xAA|0xFE|len |0x16|0xAA|0xFE|0x30|pwr |8-Byte (EID)...................|
 ==============================================================================================================================================
 */
 
 /* Notes:
- * len := 0x1B or 0x1A
  * MFG ID = "The little endian representation of the beacon device manufacturer's company code as maintained by the Bluetooth SIG assigned numbers database"
  * Code: = 0xBEAC
  * PWR := calibrated RSSI at 1m
+ * 0xXX: Manufacturer specific - ignore
 */
 static char *TAG = "js_ble";
 
-static js_ble_beacon_t detect_beacon(const uint8_t *data, size_t length) {
-    ESP_LOGD(TAG, "Got frame - length %d", length);
+static js_ble_beacon_t detect_beacon(uint8_t *rawData, size_t length) {
     if(length > 18) {
-        ESP_LOGD(TAG, "Checking flags: data[0]=%02x data[1]=%02x data[2]=%02x", data[0], data[1], data[2]);
-        if (data[0] == 0x02 && data[1] == 0x02 && data[2] == 0x06) { // Flags match
-            // Check for Eddystone
-            ESP_LOGD(TAG, "Checking for Eddystone data[3]=%02x data[4]=%02x data[6]=%02x data[7]=%02x data[8]=%02x",data[3], data[4], data[6], data[7], data[8]);
-            if (data[3] == 0xAA && data[4] == 0xFE && data[6] == 0x16 && data[7] == 0xAA && data[8] == 0xFE) {
-                ESP_LOGD(TAG, "Eddystone - checking type  data[9]=%02x",data[9]);
-                if (data[9] == 0x00) {
-                    ESP_LOGD(TAG, "Got: JS_BEACON_EDDISTONE_UID");
-                    return JS_BEACON_EDDISTONE_UID;
-                } else if (data[9] == 0x30) {
-                    ESP_LOGD(TAG, "Got: JS_BEACON_EDDISTONE_EID");
-                    return JS_BEACON_EDDISTONE_EID;
-                }
-            }else {
-                ESP_LOGD(TAG, "Checking for ALtBeacon data[7]=%02x data[8]=%02x",data[7],data[8]);
-                if ((data[7] == 0xBE && data[8] == 0xAC) || (data[7] == 0x52 && data [8] == 0x04)) {
-                    ESP_LOGD(TAG, "Got: JS_BEACON_ALT_BEACON");
-                    return JS_BEACON_ALT_BEACON;
-                }
+        uint8_t *data = rawData;
+        ESP_LOGI(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X",
+                 data[0], data[1], data[2], data[3], data[4],data[5], data[6]);
+
+        if (data[0] == 0x03 && data[1] == 0x03 && data[2] == 0xAA && data[3] == 0xFE && data[5] == 0x16 && data[6] == 0xAA && data[7] == 0xFE) {
+            if (data[8] == 0x00 && data[4] == 0x15) {
+                ESP_LOGI(TAG, "Got: JS_BEACON_EDDYSTONE_UID - Length: %d", length);
+                return JS_BEACON_EDDYSTONE_UID;
+            } else if (data[8] == 0x30 && data[4] == 0x11) {
+                ESP_LOGI(TAG, "Got: JS_BEACON_EDDYSTONE_EID - Length: %d", length);
+                return JS_BEACON_EDDYSTONE_EID;
+            }
+        } else {
+            if ((length == 27 || length == 28) && (data[0] == 0x1B || data[0] == 0x1A) && (data[1] == 0xFF) && ((data[4] == 0xBE && data[5] == 0xAC) || (data[4] == 0x02 && data [5] == 0x15))) {
+                ESP_LOGI(TAG, "Got: JS_BEACON_ALT_BEACON - Length: %d", length);
+                return JS_BEACON_ALT_BEACON;
             }
         }
+
     }
-    ESP_LOGD(TAG, "Not a beacon");
+    ESP_LOGI(TAG, "Not a beacon");
     return  JS_BEACON_NONE;
+}
+
+// Sometimes ... data submitted in beacons contains the ADV-header having:
+// Length == 0x02, Flags == 0x01 and Flags == 0x06 referring to the type of the advertisement
+// Unfortunately, there is 3rd party equipment sending and not sending it.
+// Possibly, some are buggy, so we're tolerant. Remove this header if it is present
+static uint8_t header_offset(const uint8_t *data, size_t length) {
+    if(length > 3 && data[0] == 0x02 && data[1] == 0x01 && data[2] == 0x06) {
+        return 3;
+    }
+    return 0;
 }
 
 // Receiver configuration
@@ -85,12 +90,12 @@ static esp_ble_scan_params_t ble_scan_params = {
 
 
 void js_ble_scan_start(uint32_t durationInSeconds) {
+    ESP_LOGI(TAG, "Starting Scan");
     esp_ble_gap_start_scanning(durationInSeconds);
 }
 
 void js_ble_scan_stop() {
     esp_ble_gap_stop_scanning();
-
 }
 
 
@@ -117,24 +122,31 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         case ESP_GAP_BLE_SCAN_RESULT_EVT: {
             esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
             if (scan_result->scan_rst.search_evt == ESP_GAP_SEARCH_INQ_RES_EVT) {
-                js_ble_beacon_t type = detect_beacon(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len);
+                char mac[18];
+                js_mac2strBLE(param->scan_rst.bda,mac);
+                ESP_LOGI(TAG,"MAC: %s",mac);
+                uint8_t offset = header_offset(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len);
+                uint8_t *data = &scan_result->scan_rst.ble_adv[offset];
+                size_t length = scan_result->scan_rst.adv_data_len - offset;
+
+                js_ble_beacon_t type = detect_beacon(data, length);
                 switch (type) {
                     case JS_BEACON_ALT_BEACON: {
-                        js_db_process_altbeacon(&scan_result->scan_rst.ble_adv[9],
-                                                &scan_result->scan_rst.ble_adv[25],
-                                                (int8_t) scan_result->scan_rst.ble_adv[29],
+                        js_db_process_altbeacon(&data[6],
+                                                &data[22],
+                                                (int8_t) data[26],
                                                 (int8_t) scan_result->scan_rst.rssi);
                         break;
                     }
-                    case JS_BEACON_EDDISTONE_EID:
-                        js_db_process_eddy_eid(&scan_result->scan_rst.ble_adv[9],
-                                               (int8_t) scan_result->scan_rst.ble_adv[10],
+                    case JS_BEACON_EDDYSTONE_EID:
+                        js_db_process_eddy_eid(&data[10],
+                                               (int8_t) data[9],
                                                (int8_t) scan_result->scan_rst.rssi);
                         break;
-                    case JS_BEACON_EDDISTONE_UID:
-                        js_db_process_eddy_uid(&scan_result->scan_rst.ble_adv[9],
-                                               &scan_result->scan_rst.ble_adv[21],
-                                               (int8_t) scan_result->scan_rst.ble_adv[10],
+                    case JS_BEACON_EDDYSTONE_UID:
+                        js_db_process_eddy_uid(&data[10],
+                                               &data[20],
+                                               (int8_t) data[9],
                                                (int8_t) scan_result->scan_rst.rssi);
                         break;
                     default:
@@ -150,6 +162,7 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             else {
                 ESP_LOGI(TAG, "Stop scan successfully");
             }
+            js_on_ble_finished();
             break;
         case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
             if ((err = param->adv_stop_cmpl.status) != ESP_BT_STATUS_SUCCESS){
@@ -181,4 +194,5 @@ void js_ble_scan_init() {
     js_ble_alt_beacon_register();
     esp_ble_gap_set_scan_params(&ble_scan_params);
 }
+
 

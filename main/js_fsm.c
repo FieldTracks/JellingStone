@@ -25,8 +25,9 @@ static enum state_t {
 } global_state;
 
 void js_on_mqtt_connected() {
+    ESP_LOGD(TAG, "on MQTT connected");
     global_state = mqtt_connected;
-    js_ble_scan_start(4);
+    js_ble_scan_start(0);
 }
 void js_on_mqtt_disconnected() {
     if(global_state >= mqtt_connected) {
@@ -68,4 +69,8 @@ void js_on_wlan_disconnected() {
     global_state = ip_disconnected;
     js_wlan_connect();
     js_mqtt_stop();
+}
+void js_on_ble_finished(){
+    ESP_LOGI(TAG, "BLE Scan completed");
+    global_state = publishing_scan;
 }
