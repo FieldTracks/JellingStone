@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include <esp_bt_device.h>
 
 /*
 This file is part of JellingStone - (C) The Fieldtracks Project
@@ -30,4 +32,10 @@ void js_id10bytes2str(uint8_t *p, char dest[30]){
     sprintf(dest, "%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
             p[0], p[1], p[2], p[3], p[4], p[5],
             p[6], p[7], p[8], p[9]);
+}
+
+void js_mymac_str(char dest[18]) {
+    uint8_t mac[6];
+    memcpy(mac,esp_bt_dev_get_address(),6);
+    js_mac2str(mac,dest);
 }

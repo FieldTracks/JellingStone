@@ -12,6 +12,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "js_util.h"
 #include "rom/miniz.h"
 #include "js_fsm.h"
+#include "js_status.h"
 
 static const char *TAG = "js_mqtt.c";
 static esp_mqtt_client_handle_t client;
@@ -35,7 +36,6 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             break;
         case MQTT_EVENT_PUBLISHED:
             ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-            js_on_mqtt_published();
             break;
         case MQTT_EVENT_DATA:
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
@@ -98,13 +98,15 @@ void js_mqtt_init() {
     esp_mqtt_client_register_event(client,ESP_EVENT_ANY_ID,mqtt_event_handler,NULL);
 
 }
-void js_mqtt_publish(uint8_t mac_id[6], char* message) {
+void js_mqtt_publish_report(uint8_t *message, int len) {
     char mac_str[18];
     char topic_name[32];
-    js_mac2strBLE(mac_id, mac_str);
+    js_mymac_str(mac_str);
     sprintf(topic_name,"JellingStone/%s",mac_str);
-    js_mqtt_publish_msg(topic_name,message);
+    esp_mqtt_client_publish(client, topic_name, (const char *) message, len, 1, 1);
+    js_status_ack_sent();
 }
+
 void js_mqtt_publish_msg(char *channel, char* message) {
     js_miniz_init();
     size_t message_length = strlen(message);

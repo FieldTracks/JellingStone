@@ -10,6 +10,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include <js_nvs.h>
 
 #include "esp_bt.h"
 #include "esp_gap_ble_api.h"
@@ -40,13 +41,25 @@ static char *TAG = "js_ble";
 static js_ble_beacon_t detect_beacon(uint8_t *rawData, size_t length) {
     if(length > 18) {
         uint8_t *data = rawData;
-        ESP_LOGI(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X data[7]=%02X data[8]=%02X",
-                 data[0], data[1], data[2], data[3], data[4],data[5], data[6],data[7], data[8]);
+        //ESP_LOGI(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X data[7]=%02X data[8]=%02X",
+        //         data[0], data[1], data[2], data[3], data[4],data[5], data[6],data[7], data[8]);
 
         if (data[0] == 0x03 && data[1] == 0x03 && data[2] == 0xAA && data[3] == 0xFE && data[5] == 0x16 && data[6] == 0xAA && data[7] == 0xFE) {
-            if (data[8] == 0x00 && data[4] == 0x15) {
+            if (data[8] == 0x00 && data[4] == 0x15 && length == 26) {
                 ESP_LOGI(TAG, "Got: JS_BEACON_EDDYSTONE_UID - Length: %d", length);
-                return JS_BEACON_EDDYSTONE_UID;
+                if(memcmp(js_nvs_ble_eddystone_my_org_id, &data[10], 10) == 0) {
+                    // Check, if the instance-id needs just 1 or 2 bytes
+                    if(data[20] == 0x00 && data[21] == 0x00 && data[22] == 0x00 && data[23] == 0x00) {
+                        if(data[24] == 0) {
+                            return JS_BEACON_EDDYSTONE_UID_MY_NETWORK_ONE_BYTE;
+                        } else {
+                            return JS_BEACON_EDDYSTONE_UID_MY_NETWORK_TWO_BYTES;
+                        }
+                    }
+                    return JS_BEACON_EDDYSTONE_UID_MY_NETWORK;
+                } else {
+                    return JS_BEACON_EDDYSTONE_UID;
+                }
             } else if (data[8] == 0x30 && data[4] == 0x11) {
                 ESP_LOGI(TAG, "Got: JS_BEACON_EDDYSTONE_EID - Length: %d", length);
                 return JS_BEACON_EDDYSTONE_EID;
@@ -59,7 +72,7 @@ static js_ble_beacon_t detect_beacon(uint8_t *rawData, size_t length) {
         }
 
     }
-    ESP_LOGI(TAG, "Not a beacon");
+    //ESP_LOGI(TAG, "Not a beacon");
     return  JS_BEACON_NONE;
 }
 
@@ -67,6 +80,7 @@ static js_ble_beacon_t detect_beacon(uint8_t *rawData, size_t length) {
 // Length == 0x02, Flags == 0x01 and Flags == 0x06 referring to the type of the advertisement
 // Unfortunately, there is 3rd party equipment sending and not sending it.
 // Possibly, some are buggy, so we're tolerant. Remove this header if it is present
+// Wikipedia says: "Byte 0-2: Standard BLE Flags (Not necessary but standard)" (https://en.wikipedia.org/wiki/IBeacon)
 static uint8_t header_offset(const uint8_t *data, size_t length) {
     if(length > 3 && data[0] == 0x02 && data[1] == 0x01 && data[2] == 0x06) {
         return 3;
@@ -89,9 +103,9 @@ static esp_ble_scan_params_t ble_scan_params = {
 };
 
 
-void js_ble_scan_start(uint32_t durationInSeconds) {
+void js_ble_scan_start() {
     ESP_LOGI(TAG, "Starting Scan");
-    esp_ble_gap_start_scanning(durationInSeconds);
+    esp_ble_gap_start_scanning(0);
 }
 
 void js_ble_scan_stop() {
@@ -105,16 +119,19 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 
     switch (event) {
         case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:{
+            ESP_LOGI(TAG, "ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT");
             uint32_t duration = 0;
             esp_ble_gap_start_scanning(duration);
             break;
         }
         case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SCAN_START_COMPLETE_EVT");
             if ((err = param->scan_start_cmpl.status) != ESP_BT_STATUS_SUCCESS) {
                 ESP_LOGE(TAG, "Scan start failed: %s", esp_err_to_name(err));
             }
             break;
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_ADV_START_COMPLETE_EVT");
             if ((err = param->adv_start_cmpl.status) != ESP_BT_STATUS_SUCCESS) {
                 ESP_LOGE(TAG, "Adv start failed: %s", esp_err_to_name(err));
             }
@@ -124,32 +141,33 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             if (scan_result->scan_rst.search_evt == ESP_GAP_SEARCH_INQ_RES_EVT) {
                 char mac[18];
                 js_mac2strBLE(param->scan_rst.bda,mac);
-                ESP_LOGI(TAG,"MAC: %s",mac);
+//                ESP_LOGI(TAG,"MAC: %s",mac);
                 uint8_t offset = header_offset(scan_result->scan_rst.ble_adv, scan_result->scan_rst.adv_data_len);
                 uint8_t *data = &scan_result->scan_rst.ble_adv[offset];
                 size_t length = scan_result->scan_rst.adv_data_len - offset;
+                int8_t rssi = (int8_t)scan_result->scan_rst.rssi;
 
                 js_ble_beacon_t type = detect_beacon(data, length);
                 switch (type) {
-                    case JS_BEACON_ALT_BEACON: {
-                        js_db_process_altbeacon(&data[6],
-                                                &data[22],
-                                                (int8_t) data[26],
-                                                (int8_t) scan_result->scan_rst.rssi);
+                    case JS_BEACON_ALT_BEACON:
+                        js_db_store_beacon(&data[6],rssi,type);
                         break;
-                    }
-                    case JS_BEACON_EDDYSTONE_EID:
-                        js_db_process_eddy_eid(&data[10],
-                                               (int8_t) data[9],
-                                               (int8_t) scan_result->scan_rst.rssi);
+                    case JS_BEACON_EDDYSTONE_EID: // NOLINT(bugprone-branch-clone)
+                        js_db_store_beacon(&data[10],rssi,type);
                         break;
-                    case JS_BEACON_EDDYSTONE_UID:
-                        js_db_process_eddy_uid(&data[10],
-                                               &data[20],
-                                               (int8_t) data[9],
-                                               (int8_t) scan_result->scan_rst.rssi);
+                    case JS_BEACON_EDDYSTONE_UID: // NOLINT(bugprone-branch-clone)
+                        js_db_store_beacon(&data[10],rssi,type);
                         break;
-                    default:
+                    case JS_BEACON_EDDYSTONE_UID_MY_NETWORK:
+                        js_db_store_beacon(&data[20],rssi,type);
+                        break;
+                    case JS_BEACON_EDDYSTONE_UID_MY_NETWORK_TWO_BYTES:
+                        js_db_store_beacon(&data[24],rssi,type);
+                        break;
+                    case JS_BEACON_EDDYSTONE_UID_MY_NETWORK_ONE_BYTE:
+                        js_db_store_beacon(&data[25],rssi,type);
+                        break;
+                    default: // Also: JS_BEACON_NONE
                         break;
                 }
             }
@@ -162,7 +180,6 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             else {
                 ESP_LOGI(TAG, "Stop scan successfully");
             }
-            js_on_ble_finished();
             break;
         case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
             if ((err = param->adv_stop_cmpl.status) != ESP_BT_STATUS_SUCCESS){
@@ -172,8 +189,185 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
                 ESP_LOGI(TAG, "Stop adv successfully");
             }
             break;
-
         default:
+            ESP_LOGI(TAG, "Unhandled event: %d",event );
+            break;
+        case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SCAN_RSP_DATA_RAW_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SCAN_RSP_DATA_RAW_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_AUTH_CMPL_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_AUTH_CMPL_EVT");
+            break;
+        case ESP_GAP_BLE_KEY_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_KEY_EVT");
+            break;
+        case ESP_GAP_BLE_SEC_REQ_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SEC_REQ_EVT");
+            break;
+        case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PASSKEY_NOTIF_EVT");
+            break;
+        case ESP_GAP_BLE_PASSKEY_REQ_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PASSKEY_REQ_EVT");
+            break;
+        case ESP_GAP_BLE_OOB_REQ_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_OOB_REQ_EVT");
+            break;
+        case ESP_GAP_BLE_LOCAL_IR_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_LOCAL_IR_EVT");
+            break;
+        case ESP_GAP_BLE_LOCAL_ER_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_LOCAL_ER_EVT");
+            break;
+        case ESP_GAP_BLE_NC_REQ_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_NC_REQ_EVT");
+            break;
+        case ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT");
+            break;
+        case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT");
+            break;
+        case ESP_GAP_BLE_SET_PKT_LENGTH_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SET_PKT_LENGTH_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_CLEAR_BOND_DEV_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_GET_BOND_DEV_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_GET_BOND_DEV_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_READ_RSSI_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_UPDATE_WHITELIST_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_UPDATE_WHITELIST_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SET_CHANNELS_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SET_CHANNELS_EVT");
+            break;
+        case ESP_GAP_BLE_READ_PHY_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_READ_PHY_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SET_PREFERED_DEFAULT_PHY_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SET_PREFERED_DEFAULT_PHY_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SET_PREFERED_PHY_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SET_PREFERED_PHY_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_SET_RAND_ADDR_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_SET_RAND_ADDR_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_SET_PARAMS_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_SET_PARAMS_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_DATA_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_DATA_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_SCAN_RSP_DATA_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_SCAN_RSP_DATA_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_START_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_START_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_STOP_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_STOP_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_SET_REMOVE_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_SET_REMOVE_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_SET_CLEAR_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_SET_CLEAR_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_SET_PARAMS_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_SET_PARAMS_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_DATA_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_DATA_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_START_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_START_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_STOP_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_STOP_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_CREATE_SYNC_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_CREATE_SYNC_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_SYNC_CANCEL_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_SYNC_CANCEL_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_SYNC_TERMINATE_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_SYNC_TERMINATE_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_ADD_DEV_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_ADD_DEV_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_REMOVE_DEV_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_REMOVE_DEV_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_CLEAR_DEV_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_CLEAR_DEV_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_SET_EXT_SCAN_PARAMS_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SET_EXT_SCAN_PARAMS_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_SCAN_START_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_SCAN_START_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_SCAN_STOP_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_SCAN_STOP_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PREFER_EXT_CONN_PARAMS_SET_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PREFER_EXT_CONN_PARAMS_SET_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_PHY_UPDATE_COMPLETE_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PHY_UPDATE_COMPLETE_EVT");
+            break;
+        case ESP_GAP_BLE_EXT_ADV_REPORT_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EXT_ADV_REPORT_EVT");
+            break;
+        case ESP_GAP_BLE_SCAN_TIMEOUT_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SCAN_TIMEOUT_EVT");
+            break;
+        case ESP_GAP_BLE_ADV_TERMINATED_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_ADV_TERMINATED_EVT");
+            break;
+        case ESP_GAP_BLE_SCAN_REQ_RECEIVED_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_SCAN_REQ_RECEIVED_EVT");
+            break;
+        case ESP_GAP_BLE_CHANNEL_SELETE_ALGORITHM_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_CHANNEL_SELETE_ALGORITHM_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_REPORT_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_REPORT_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_SYNC_LOST_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_SYNC_LOST_EVT");
+            break;
+        case ESP_GAP_BLE_PERIODIC_ADV_SYNC_ESTAB_EVT:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_PERIODIC_ADV_SYNC_ESTAB_EVT");
+            break;
+        case ESP_GAP_BLE_EVT_MAX:
+            ESP_LOGI(TAG, "ESP_GAP_BLE_EVT_MAX");
             break;
     }
 }
@@ -196,3 +390,6 @@ void js_ble_scan_init() {
 }
 
 
+inline size_t payload_length_of_type(js_ble_beacon_t type) {
+    return type; // Easy for now: Length == Type
+}

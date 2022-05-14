@@ -5,11 +5,22 @@ This file is part of JellingStone - (C) The Fieldtracks Project
     If not, please contact info@fieldtracks.org
 */
 #include <stdint.h>
+#include "js_ble.h"
 
 
 #ifndef JELLINGSTONE_JS_DB_H
 #define JELLINGSTONE_JS_DB_H
-void js_db_process_altbeacon(uint8_t organizational_unit[16], uint8_t remainder[4], int8_t calibrated_rssi_1m, int8_t detected_rssi);
-void js_db_process_eddy_eid(uint8_t eid[8], int8_t calibrated_rssi_0m, int8_t detected_rssi);
-void js_db_process_eddy_uid(uint8_t namespace[10], uint8_t instance[6], int8_t calibrated_rssi_0m, int8_t detected_rssi);
+// ~32 Byte per Beacon, not packed
+typedef struct db_entry {
+    js_ble_beacon_t type;
+    int8_t max_rssi;
+    uint8_t data[20]; // At most - entries can be smaller
+} db_entry_t;
+
+// Needs ~ 8 KiB on heap
+db_entry_t js_db_database[256];
+
+void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t type);
+void js_db_submit_over_mqtt();
+void js_db_clear();
 #endif //JELLINGSTONE_JS_DB_H

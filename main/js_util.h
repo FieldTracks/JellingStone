@@ -14,5 +14,6 @@ void js_mac2str(uint8_t p[6], char dest[18]);
 void js_uuid2str(uint8_t *uuid, char dest[48]);
 void js_mac2strBLE(const uint8_t p[6], char dest[18]);
 void js_id10bytes2str(uint8_t *p, char dest[30]);
+void js_mymac_str(char dest[18]);
 
 #endif //JELLINGSTONE_UTIL_H

@@ -1,5 +1,7 @@
 #include <esp_log.h>
 #include "js_nvs.h"
+#include "js_status.h"
+#include "js_fsm.h"
 /*
 This file is part of JellingStone - (C) The Fieldtracks Project
     JellingStone is distributed under the civilian open source license (COSLi).
@@ -24,14 +26,19 @@ void js_nvs_init() {
     }
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Unable to init nvs: %s", esp_err_to_name(err));
+        js_status_set(nvs_missing);
         ESP_ERROR_CHECK(err);
     }
-
 
     if ((err = nvs_open("config", NVS_READONLY, &nvsHandle)) != ESP_OK) {
         ESP_LOGE(TAG, "Error opening nvs: %s", esp_err_to_name(err));
+        js_status_set(nvs_missing);
         ESP_ERROR_CHECK(err);
     }
+
+    // Eagerly cache own organisation for ble checks
+    size_t cache_length = 10;
+    ESP_ERROR_CHECK(nvs_get_blob(nvsHandle, "BLE_EDDY_ORG", js_nvs_ble_eddystone_my_org_id, &cache_length));
 }
 
 void js_nvs_read_str(const char *key, char *out_value, size_t *length) {
@@ -42,6 +49,8 @@ void js_nvs_read_str(const char *key, char *out_value, size_t *length) {
     err = nvs_get_str(nvsHandle,key,out_value,length) ;
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Unable to retrieve '%s' from NVS: %s", key, esp_err_to_name(err));
+        js_status_set(nvs_missing);
+
         ESP_ERROR_CHECK(err);
     }
 }
@@ -54,6 +63,8 @@ void js_nvs_read_i32(const char *key, int32_t *out_value, size_t *length) {
     err = nvs_get_i32(nvsHandle,key,out_value) ;
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Unable to retrieve '%s' from NVS: %s", key, esp_err_to_name(err));
+        js_status_set(nvs_missing);
+
         ESP_ERROR_CHECK(err);
     }
 }
@@ -91,4 +102,6 @@ char* js_nvs_mqtt_password() {
 char* js_nvs_mqtt_cert() {
     return js_nvs_retr_string_2_calls(("MQTT_CERT"));
 }
+
+
 
