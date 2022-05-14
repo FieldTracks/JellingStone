@@ -29,7 +29,6 @@ void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t typ
     db_entry_t *entry = NULL;
     for (uint8_t i = next_slot_for_submission; i != next_free_slot; ) {
         db_entry_t *current = &js_db_database[i];
-        ESP_LOGI(TAG, "Checking entry at %d - type is %d, memcmp yields %d for length:",current->type,memcmp(data, current->data, data_len), data_len);
         if (current->type == type && memcmp(data, current->data, data_len) == 0) {
             ESP_LOGI(TAG, "Beacons exists in database");
             entry = current;
