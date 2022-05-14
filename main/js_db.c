@@ -80,7 +80,7 @@ void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t typ
 
 // Beacon-data:
 // 0. byte: Beacon Type (c.f. enum)
-// 1. byte: max_rssi
+// 1. byte: max_rssi + 100 - Note: Because 2.4 GHz transmission is always below 24 dBm, this shifts the byte into a safe areay
 // 3. byte ... actual beacon data (Note: The length depends on the type)
 
 #define REPORT_BEACON_HEADER_SIZE_IN_BYTES 2
@@ -102,7 +102,7 @@ void js_db_submit_over_mqtt() {
         db_entry_t *entry = &js_db_database[next_slot_for_submission];
         uint8_t * d_pos = &m_buffer[bytes_written];
         d_pos[DATA_TYPE_POS] = entry->type;
-        d_pos[DATA_RSSI_POS] = entry->max_rssi;
+        d_pos[DATA_RSSI_POS] = entry->max_rssi + 100;
         uint8_t data_len = payload_length_of_type(entry->type); // easy for now
 
         memcpy(&d_pos[DATA_BEACON_DATA_POS],entry->data,data_len);
