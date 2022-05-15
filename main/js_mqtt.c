@@ -12,7 +12,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "js_util.h"
 #include "rom/miniz.h"
 #include "js_fsm.h"
-#include "js_status.h"
 
 static const char *TAG = "js_mqtt.c";
 static esp_mqtt_client_handle_t client;
@@ -53,15 +52,15 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     return ESP_OK;
 }
 
-void js_mqtt_start() {
-    esp_mqtt_client_start(client);
+esp_err_t js_mqtt_start() {
+    return esp_mqtt_client_start(client);
 }
-void js_mqtt_restart() {
-    esp_mqtt_client_stop(client);
-    esp_mqtt_client_start(client);
+esp_err_t js_mqtt_restart() {
+    JS_ERROR_CHECK(esp_mqtt_client_stop(client));
+    return esp_mqtt_client_start(client);
 }
-void js_mqtt_stop() {
-    esp_mqtt_client_stop(client);
+esp_err_t js_mqtt_stop() {
+    return esp_mqtt_client_stop(client);
 }
 
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
@@ -85,7 +84,16 @@ static void js_miniz_init() {
 
 }
 
-void js_mqtt_init() {
+esp_err_t js_mqtt_init() {
+    const char *user =js_nvs_mqtt_user();
+    const char *password =js_nvs_mqtt_password();
+    const char *cert =js_nvs_mqtt_cert();
+    const char *url = js_nvs_mqtt_url();
+
+    if(user == NULL || password == NULL || cert == NULL || url == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
     const esp_mqtt_client_config_t mqtt_cfg = {
             .reconnect_timeout_ms = 100,
             .uri = js_nvs_mqtt_url(),
@@ -95,16 +103,21 @@ void js_mqtt_init() {
 
     };
     client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(client,ESP_EVENT_ANY_ID,mqtt_event_handler,NULL);
+    if(client == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    JS_ERROR_CHECK(esp_mqtt_client_register_event(client,ESP_EVENT_ANY_ID,mqtt_event_handler,NULL));
+    return ESP_OK;
+
 
 }
-void js_mqtt_publish_report(uint8_t *message, int len) {
+int js_mqtt_publish_report(uint8_t *message, int len) {
     char mac_str[18];
     char topic_name[32];
     js_mymac_str(mac_str);
     sprintf(topic_name,"JellingStone/%s",mac_str);
-    esp_mqtt_client_publish(client, topic_name, (const char *) message, len, 1, 1);
-    js_status_ack_sent();
+    return esp_mqtt_client_publish(client, topic_name, (const char *) message, len, 1, 1);
 }
 
 void js_mqtt_publish_msg(char *channel, char* message) {

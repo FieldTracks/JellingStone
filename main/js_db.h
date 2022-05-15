@@ -7,7 +7,6 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include <stdint.h>
 #include "js_ble.h"
 
-
 #ifndef JELLINGSTONE_JS_DB_H
 #define JELLINGSTONE_JS_DB_H
 // ~32 Byte per Beacon, not packed
@@ -21,6 +20,6 @@ typedef struct db_entry {
 db_entry_t js_db_database[256];
 
 void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t type);
-void js_db_submit_over_mqtt();
+int js_db_submit_over_mqtt();
 void js_db_clear();
 #endif //JELLINGSTONE_JS_DB_H

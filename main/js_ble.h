@@ -7,9 +7,11 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 
 #ifndef JELLINGSTONE_JS_BLE_H
 #define JELLINGSTONE_JS_BLE_H
-void js_ble_scan_start();
+#include "esp_err.h"
+
+esp_err_t js_ble_scan_start();
 void js_ble_scan_stop();
-void js_ble_scan_init();
+esp_err_t js_ble_scan_init();
 
 typedef enum {
     JS_BEACON_NONE = 0, // No beacon, no data

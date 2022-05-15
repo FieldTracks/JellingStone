@@ -5,8 +5,19 @@ This file is part of JellingStone - (C) The Fieldtracks Project
     If not, please contact info@fieldtracks.org
 */
 
+#ifndef JS_ERROR_CHECK
+#define JS_ERROR_CHECK(x) do {                                         \
+        esp_err_t err_rc_ = (x);                                        \
+        if (unlikely(err_rc_ != ESP_OK)) {                              \
+                                    return err_rc_;                 \
+        }                                                               \
+    } while(0)
+#endif
+
+
 #ifndef JELLINGSTONE_UTIL_H
 #define JELLINGSTONE_UTIL_H
+
 
 #include <stdint.h>
 

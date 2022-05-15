@@ -88,7 +88,7 @@ void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t typ
 #define DATA_BEACON_DATA_POS 2
 
 static uint8_t m_buffer[1000]; // No more than 1000 Bytes per Message over MQTT => Avoid fragmentation on lower layers
-void js_db_submit_over_mqtt() {
+int js_db_submit_over_mqtt() {
     ESP_LOGI(TAG, "Submitting database over MQTT");
     ESP_LOGI(TAG, "Preparing new message");
     m_buffer[REPORT_VERSION_POS] = 1; // Protocol-Version: 1
@@ -122,7 +122,7 @@ void js_db_submit_over_mqtt() {
     // Send last message, close the report
     m_buffer[REPORT_MID_POS] *= -1;
     ESP_LOGI(TAG, "Submitting final message - closing report");
-    js_mqtt_publish_report(m_buffer, bytes_written);
+    return js_mqtt_publish_report(m_buffer, bytes_written);
 
 }
 void js_db_clear() {

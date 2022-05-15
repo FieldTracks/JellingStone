@@ -8,14 +8,11 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 
 #include "esp_log.h"
 #include "js_nvs.h"
-#include "js_wlan.h"
 #include "js_fsm.h"
-#include "js_status.h"
 static const char *TAG = "app_main";
 
 void app_main(void)
 {
     ESP_LOGI(TAG, "[APP] Startup..");
-    js_status_booting();
     js_fsm_app_start();
 }

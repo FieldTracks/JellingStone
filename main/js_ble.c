@@ -103,9 +103,9 @@ static esp_ble_scan_params_t ble_scan_params = {
 };
 
 
-void js_ble_scan_start() {
+esp_err_t js_ble_scan_start() {
     ESP_LOGI(TAG, "Starting Scan");
-    esp_ble_gap_start_scanning(0);
+    return esp_ble_gap_start_scanning(0);
 }
 
 void js_ble_scan_stop() {
@@ -371,22 +371,25 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             break;
     }
 }
-static void js_ble_alt_beacon_register() {
+esp_err_t js_ble_alt_beacon_register() {
     esp_err_t  err;
     if((err = esp_ble_gap_register_callback(js_ble_esp_gap_cb)) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to register callback %s", esp_err_to_name(err));
     }
+    return err;
 }
 
-void js_ble_scan_init() {
-    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+esp_err_t js_ble_scan_init() {
+    JS_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    esp_bt_controller_init(&bt_cfg);
-    esp_bt_controller_enable(ESP_BT_MODE_BLE);
-    esp_bluedroid_init();
-    esp_bluedroid_enable();
-    js_ble_alt_beacon_register();
-    esp_ble_gap_set_scan_params(&ble_scan_params);
+    JS_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
+    JS_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
+    JS_ERROR_CHECK(esp_bluedroid_init());
+    JS_ERROR_CHECK(esp_bluedroid_enable());
+    JS_ERROR_CHECK(js_ble_alt_beacon_register());
+    JS_ERROR_CHECK(esp_ble_gap_set_scan_params(&ble_scan_params));
+
+    return ESP_OK;
 }
 
 
