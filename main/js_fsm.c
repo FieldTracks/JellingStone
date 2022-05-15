@@ -18,6 +18,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "freertos/task.h"
 #include "js_db.h"
 #include "js_nvs.h"
+#include "js_status_report.h"
 
 static char* TAG = "js_fsm";
 static TaskHandle_t main_task;
@@ -61,6 +62,7 @@ static void check_error(esp_err_t status) { // When running into an error: suspe
 void js_on_mqtt_connected() {
     ESP_LOGD(TAG, "on MQTT connected");
     set_state_internal(scan_and_publish);
+    js_status_report_send();
     xTaskNotify(main_task, 0, eNoAction); // If MQTT is connected: Restart waiting task
 }
 

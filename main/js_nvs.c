@@ -1,6 +1,9 @@
 #include <esp_log.h>
 #include "js_nvs.h"
 #include "js_fsm.h"
+#include "js_util.h"
+#include <arpa/inet.h>
+#include <string.h>
 /*
 This file is part of JellingStone - (C) The Fieldtracks Project
     JellingStone is distributed under the civilian open source license (COSLi).
@@ -32,8 +35,23 @@ esp_err_t js_nvs_init() {
     }
 
     // Eagerly cache own organisation for ble checks
-    size_t cache_length = 10;
-    return nvs_get_blob(nvsHandle, "BLE_EDDY_ORG", js_nvs_ble_eddystone_my_org_id, &cache_length);
+
+    size_t cache_length = 0;
+    JS_ERROR_CHECK(nvs_get_blob(nvsHandle, "BLE_EDDY_ORG", NULL, &cache_length));
+    if(cache_length != 10) {
+        ESP_LOGE(TAG, "BLE_EDDY_ORG invalid size. It has %d bytes, but Eddystone requires 10", cache_length);
+        return ESP_ERR_INVALID_STATE;
+    }
+    JS_ERROR_CHECK(nvs_get_blob(nvsHandle, "BLE_EDDY_ORG", js_nvs_ble_eddystone_my_org_id, &cache_length));
+
+    uint32_t instance_id = 0;
+    JS_ERROR_CHECK(nvs_get_u32(nvsHandle, "BLE_EDDY_INST",&instance_id));
+    instance_id = htonl(instance_id);
+    js_nvs_ble_instance[0] = 0x00; // First two of six bytes: Always zero
+    js_nvs_ble_instance[1] = 0x00;
+    memcpy(&js_nvs_ble_instance[2],&instance_id, 4); // Copy in network byte order (big endian
+
+    return ESP_OK;
 }
 
 esp_err_t js_nvs_read_str(const char *key, char *out_value, size_t *length) {

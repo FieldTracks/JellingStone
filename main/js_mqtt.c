@@ -12,10 +12,10 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "js_util.h"
 #include "rom/miniz.h"
 #include "js_fsm.h"
+#include "js_util.h"
 
 static const char *TAG = "js_mqtt.c";
 static esp_mqtt_client_handle_t client;
-static tdefl_compressor g_deflator;
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
     switch (event->event_id) {
@@ -70,20 +70,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     mqtt_event_handler_cb(event_data);
 }
 
-static void js_miniz_init() {
-    int level = 10;
-    tdefl_status status;
-
-    static const mz_uint s_tdefl_num_probes[11] = { 0, 1, 6, 32,  16, 32, 128, 256,  512, 768, 1500 };
-    mz_uint comp_flags = TDEFL_WRITE_ZLIB_HEADER | s_tdefl_num_probes[level];
-    status = tdefl_init(&g_deflator, NULL, NULL, (int)comp_flags);
-    if (status != TDEFL_STATUS_OKAY) {
-        printf("tdefl_init() failed!\n");
-        ESP_ERROR_CHECK( ESP_LOG_ERROR);
-    }
-
-}
-
 esp_err_t js_mqtt_init() {
     const char *user =js_nvs_mqtt_user();
     const char *password =js_nvs_mqtt_password();
@@ -112,32 +98,24 @@ esp_err_t js_mqtt_init() {
 
 
 }
-int js_mqtt_publish_report(uint8_t *message, int len) {
+int js_mqtt_publish_report(uint8_t *message, int len, int *msg_id_out) {
     char mac_str[18];
-    char topic_name[32];
+    char topic_name[37];
     js_mymac_str(mac_str);
-    sprintf(topic_name,"JellingStone/%s",mac_str);
-    return esp_mqtt_client_publish(client, topic_name, (const char *) message, len, 1, 1);
+    sprintf(topic_name,"JellingStone/%s/scan",mac_str);
+    *msg_id_out = esp_mqtt_client_publish(client, topic_name, (const char *) message, len, 1, 1);
+    ESP_LOGI(TAG, "Published scan report - size %d bytes", len);
+    return ESP_OK;
 }
 
-void js_mqtt_publish_msg(char *channel, char* message) {
-    js_miniz_init();
-    size_t message_length = strlen(message);
-    char *compressed_message = calloc(1,message_length);
-    if(compressed_message == NULL) {
-        ESP_LOGE(TAG, "No memory for compressed buffer - available: %d", esp_get_free_heap_size());
-        ESP_ERROR_CHECK( ESP_ERR_NO_MEM);
-    }
-    int cmp_status;
-    size_t in_bytes, out_bytes;
-    cmp_status = tdefl_compress(&g_deflator, message, &in_bytes, compressed_message, &out_bytes, TDEFL_FINISH);
+esp_err_t js_mqtt_publish_status(char *message,int *msg_id_out) {
+    char mac_str[18];
+    char topic_name[39];
+    js_mymac_str(mac_str);
+    sprintf(topic_name,"JellingStone/%s/status",mac_str);
+    size_t len = strlen(message);
+    *msg_id_out = esp_mqtt_client_publish(client, topic_name, message, (int) len, 1, 1);
+    ESP_LOGI(TAG, "Published status report - size %d bytes", len);
 
-    if(cmp_status == TDEFL_STATUS_OKAY) {
-        ESP_LOGI(TAG, "Compressed %d bytes to %d", in_bytes,out_bytes);
-        esp_mqtt_client_publish(client, channel, compressed_message, (int)out_bytes, 1, 1);
-    } else {
-        ESP_LOGI(TAG, "Failed compressing message - sending uncompressed");
-        esp_mqtt_client_publish(client, channel, message, 0, 1, 1);
-    }
-    free(compressed_message);
+    return ESP_OK;
 }

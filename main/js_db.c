@@ -97,6 +97,7 @@ int js_db_submit_over_mqtt() {
     m_buffer[REPORT_BNUM_POS] = 0;
     uint16_t bytes_written = REPORT_HEADER_SIZE_IN_BYTES;
 
+    int msgid = 0;
     while(next_slot_for_submission != next_free_slot){
         db_entry_t *entry = &js_db_database[next_slot_for_submission];
         uint8_t * d_pos = &m_buffer[bytes_written];
@@ -112,7 +113,7 @@ int js_db_submit_over_mqtt() {
 
         if(bytes_written > 975 && next_slot_for_submission != next_free_slot) { // Less than one alt-beacon free, still data to submit
             ESP_LOGI(TAG, "Message has %d bytes and exceeds limit of 975 bytes - preparing next one", bytes_written);
-            js_mqtt_publish_report(m_buffer, bytes_written);
+            js_mqtt_publish_report(m_buffer, bytes_written,&msgid);
             // Re-use message-buffer for the next-message
             m_buffer[REPORT_MID_POS]++;
             m_buffer[REPORT_BNUM_POS]=0;
@@ -122,7 +123,7 @@ int js_db_submit_over_mqtt() {
     // Send last message, close the report
     m_buffer[REPORT_MID_POS] *= -1;
     ESP_LOGI(TAG, "Submitting final message - closing report");
-    return js_mqtt_publish_report(m_buffer, bytes_written);
+    return js_mqtt_publish_report(m_buffer, bytes_written,&msgid);
 
 }
 void js_db_clear() {
