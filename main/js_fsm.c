@@ -93,6 +93,7 @@ _Noreturn void js_fsm_app_start() {
     uint32_t ulNotifiedValue;
     while(true) {
         ESP_LOGI(TAG, "Entering main loop - global state s %d", global_status);
+        check_error(js_ble_start_beacon());
         bool scan_started = false;
         if(global_status == scan_and_publish) {
             ESP_LOGI(TAG,"Start scanning");
@@ -108,6 +109,7 @@ _Noreturn void js_fsm_app_start() {
                          &ulNotifiedValue,
                          SCAN_PERIOD_SECONDS * 1000 / portTICK_PERIOD_MS // Scan period: 4 seconds
                          );
+        check_error(js_ble_stop_beacon());
         if(scan_started == true) {
             ESP_LOGI(TAG, "Stopping Scan, submitting data");
             js_ble_scan_stop();

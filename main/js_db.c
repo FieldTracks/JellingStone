@@ -96,6 +96,7 @@ int js_db_submit_over_mqtt() {
     m_buffer[REPORT_MID_POS] = 1; // Message-ID: 1, first message
     m_buffer[REPORT_BNUM_POS] = 0;
     uint16_t bytes_written = REPORT_HEADER_SIZE_IN_BYTES;
+    ESP_LOGI(TAG, "Preparing new message - added %d bytes of header", bytes_written);
 
     int msgid = 0;
     while(next_slot_for_submission != next_free_slot){

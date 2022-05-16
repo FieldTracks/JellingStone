@@ -25,22 +25,7 @@ typedef enum {
 } js_ble_beacon_t;
 size_t payload_length_of_type(js_ble_beacon_t type);
 
-
-//typedef struct {
-//    uint8_t organizational_unit[16];
-//    uint8_t remainder[4];
-//    int8_t calibrated_rssi;
-//} js_altbeacon_t;
-//
-//typedef struct {
-//    uint8_t namespace[10];
-//    uint8_t instance[6];
-//    int8_t calibrated_rssi;
-//} jseddy_uid_t;
-//
-//typedef struct {
-//    uint8_t eid[8];
-//    int8_t calibrated_rssi;
-//} js_eddy_eid_t;
+esp_err_t js_ble_start_beacon();
+esp_err_t js_ble_stop_beacon();
 
 #endif

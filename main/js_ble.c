@@ -38,11 +38,26 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 */
 static char *TAG = "js_ble";
 
+static uint8_t *own_eddystone_uid_data() {
+    uint8_t *data = calloc(26, 1);
+    // Common header
+    data[0] = 0x03; data[1] = 0x03; data[2] = 0xAA; data[3] = 0xFE;
+    data[4] = 0x15; data[5] = 0x16; data[6] = 0xAA; data[7] = 0xFE; data[8] = 0x00;
+    // Transmission power in slot 9
+    data[9] = -12 + (3 * esp_ble_tx_power_get(ESP_BLE_PWR_TYPE_ADV));
+    // Fill in org-id
+    memcpy(&data[10], js_nvs_ble_eddystone_my_org_id, 10);
+
+    // Fill in instance-id
+    memcpy(&data[20], js_nvs_ble_instance, 6);
+    return data;
+}
+
 static js_ble_beacon_t detect_beacon(uint8_t *rawData, size_t length) {
     if(length > 18) {
         uint8_t *data = rawData;
-        //ESP_LOGI(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X data[7]=%02X data[8]=%02X",
-        //         data[0], data[1], data[2], data[3], data[4],data[5], data[6],data[7], data[8]);
+        ESP_LOGD(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X data[7]=%02X data[8]=%02X",
+                 data[0], data[1], data[2], data[3], data[4],data[5], data[6],data[7], data[8]);
 
         if (data[0] == 0x03 && data[1] == 0x03 && data[2] == 0xAA && data[3] == 0xFE && data[5] == 0x16 && data[6] == 0xAA && data[7] == 0xFE) {
             if (data[8] == 0x00 && data[4] == 0x15 && length == 26) {
@@ -107,6 +122,24 @@ esp_err_t js_ble_scan_start() {
     ESP_LOGI(TAG, "Starting Scan");
     return esp_ble_gap_start_scanning(0);
 }
+
+static esp_ble_adv_params_t ble_adv_params = {
+        .adv_int_min        = 0x00F0, // Min-Interval: 300 ms = 1.25 * 0x00F0
+        .adv_int_max        = 0x0140, // Max-Interval: 400 ms = 1.25 * 0x0140
+        .adv_type           = ADV_TYPE_NONCONN_IND,
+        .own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
+        .channel_map        = ADV_CHNL_ALL,
+        .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+};
+esp_err_t js_ble_start_beacon() {
+    ESP_LOGI(TAG, "Starting beacon");
+    return esp_ble_gap_start_advertising(&ble_adv_params);
+}
+esp_err_t js_ble_stop_beacon() {
+    ESP_LOGI(TAG, "Stopping beacon");
+    return esp_ble_gap_stop_advertising();
+}
+
 
 void js_ble_scan_stop() {
     esp_ble_gap_stop_scanning();
@@ -188,9 +221,6 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             else {
                 ESP_LOGI(TAG, "Stop adv successfully");
             }
-            break;
-        default:
-            ESP_LOGI(TAG, "Unhandled event: %d",event );
             break;
         case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
             ESP_LOGI(TAG, "ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT");
@@ -369,15 +399,19 @@ static void js_ble_esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         case ESP_GAP_BLE_EVT_MAX:
             ESP_LOGI(TAG, "ESP_GAP_BLE_EVT_MAX");
             break;
+        default:
+            ESP_LOGI(TAG, "Unhandled BLE event: %d",event );
+            break;
     }
 }
-esp_err_t js_ble_alt_beacon_register() {
+esp_err_t js_ble_receiver_register() {
     esp_err_t  err;
     if((err = esp_ble_gap_register_callback(js_ble_esp_gap_cb)) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to register callback %s", esp_err_to_name(err));
     }
     return err;
 }
+
 
 esp_err_t js_ble_scan_init() {
     JS_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
@@ -386,9 +420,9 @@ esp_err_t js_ble_scan_init() {
     JS_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
     JS_ERROR_CHECK(esp_bluedroid_init());
     JS_ERROR_CHECK(esp_bluedroid_enable());
-    JS_ERROR_CHECK(js_ble_alt_beacon_register());
+    JS_ERROR_CHECK(js_ble_receiver_register());
     JS_ERROR_CHECK(esp_ble_gap_set_scan_params(&ble_scan_params));
-
+    JS_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(own_eddystone_uid_data(),26));
     return ESP_OK;
 }
 

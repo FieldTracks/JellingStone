@@ -10,6 +10,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include <esp_app_format.h>
 #include <esp_ota_ops.h>
 #include <esp_system.h>
+#include <esp_timer.h>
 #include "js_status_report.h"
 #include "cJSON.h"
 #include "js_nvs.h"
@@ -53,6 +54,7 @@ esp_err_t js_status_report_send() {
 
     js_ntp_time_str(timestmp);
     cJSON_AddStringToObject(root, "date_time", timestmp);
+    cJSON_AddItemToObject(root, "uptime_seconds", cJSON_CreateNumber(esp_timer_get_time() / 1000 / 1000)); // NOLINT(cppcoreguidelines-narrowing-conversions,bugprone-integer-division)
 
     char *result = cJSON_PrintUnformatted(root);
     int msg_id;
