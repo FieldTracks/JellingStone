@@ -53,6 +53,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 }
 
 esp_err_t js_mqtt_start() {
+    ESP_LOGI(TAG, "Starting MQTT");
     return esp_mqtt_client_start(client);
 }
 esp_err_t js_mqtt_restart() {
@@ -88,6 +89,8 @@ esp_err_t js_mqtt_init() {
             .password = js_nvs_mqtt_password(),
 
     };
+    ESP_LOGI(TAG, "MQTT init - User: %s, Broker: %s", mqtt_cfg.username, mqtt_cfg.uri);
+
     client = esp_mqtt_client_init(&mqtt_cfg);
     if(client == NULL) {
         return ESP_ERR_INVALID_STATE;

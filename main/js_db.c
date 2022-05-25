@@ -9,6 +9,7 @@ This file is part of JellingStone - (C) The Fieldtracks Project
 #include "js_db.h"
 #include <string.h>
 #include <time.h>
+#include <lwip/def.h>
 #include "js_fsm.h"
 #include "js_ble.h"
 #include "js_mqtt.h"
@@ -17,6 +18,9 @@ static uint8_t next_free_slot = 0;
 static uint8_t next_slot_for_submission = 0;
 
 static char *TAG="js_db";
+
+// Optimized function for comparing
+static inline uint32_t my_cmp(const uint8_t *a, const uint8_t *b, int len);
 
 // Note concurrency: This method is solely called by the BLE event handler
 // Hence, we don't need to block. All data is processed one by one
@@ -29,12 +33,12 @@ void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t typ
     db_entry_t *entry = NULL;
     for (uint8_t i = next_slot_for_submission; i != next_free_slot; ) {
         db_entry_t *current = &js_db_database[i];
-        if (current->type == type && memcmp(data, current->data, data_len) == 0) {
-            ESP_LOGI(TAG, "Beacons exists in database");
+        if (current->type == type && my_cmp(data, current->data, data_len) == 0) {
+            ESP_LOGI(TAG, "Beacon exists in database");
             entry = current;
             break;
         }
-        i = (i+1) % 256;
+        i++; // Overflow at database-max (i.e. 255)
     }
     // If the entry was found: Update RSSI, done
     if (entry != NULL) {
@@ -51,7 +55,7 @@ void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t typ
         entry->max_rssi = detected_rssi;
         entry->type = type;
         // Note Concurrency: Update marker at end to avoid submitting incomplete results in a different task
-        uint8_t slot = (next_free_slot + 1) % 256;
+        uint8_t slot = next_free_slot + 1; // Overflow at database-max (i.e. 255)
 
         // Note: Atomic Update
         next_free_slot = slot;
@@ -62,6 +66,17 @@ void js_db_store_beacon(uint8_t *data, int8_t detected_rssi, js_ble_beacon_t typ
         }
 
     }
+}
+
+// Helper for easier code
+static inline void insert_timestamp(long *position) {
+    time_t timestamp;
+    if(sizeof(timestamp) != 4) {
+        ESP_LOGE(TAG, "time_t is not 32-Bit. This protocol requires a 32-Bit time_t. Expect overflows closer to the year 2038.");
+    }
+    time(&timestamp);
+    uint32_t converted = htonl(timestamp);
+    *position = converted;
 }
 
 // Wire-protocol, sent using MQTT
@@ -92,7 +107,7 @@ int js_db_submit_over_mqtt() {
     ESP_LOGI(TAG, "Submitting database over MQTT");
     ESP_LOGI(TAG, "Preparing new message");
     m_buffer[REPORT_VERSION_POS] = 1; // Protocol-Version: 1
-    time((time_t *) &m_buffer[REPORT_TIMESTMP_POS]); // Timestamp
+    insert_timestamp((long *) &m_buffer[REPORT_TIMESTMP_POS]); // Timestamp - 32-Bit time_t on ESP-IDF. MIND the year 2038 or changes in esp-idf
     m_buffer[REPORT_MID_POS] = 1; // Message-ID: 1, first message
     m_buffer[REPORT_BNUM_POS] = 0;
     uint16_t bytes_written = REPORT_HEADER_SIZE_IN_BYTES;
@@ -109,7 +124,7 @@ int js_db_submit_over_mqtt() {
         memcpy(&d_pos[DATA_BEACON_DATA_POS],entry->data,data_len);
         bytes_written += data_len + REPORT_BEACON_HEADER_SIZE_IN_BYTES;
         m_buffer[REPORT_BNUM_POS]++;
-        next_slot_for_submission = (next_slot_for_submission + 1) % 256;
+        next_slot_for_submission = next_slot_for_submission + 1; // Overflow at 255 (i.e. database-size)
         ESP_LOGI(TAG, "Added entry - type: %d, rssi: %d", d_pos[DATA_TYPE_POS], d_pos[DATA_RSSI_POS]);
 
         if(bytes_written > 975 && next_slot_for_submission != next_free_slot) { // Less than one alt-beacon free, still data to submit
@@ -131,4 +146,19 @@ void js_db_clear() {
     ESP_LOGI(TAG, "Reset database");
     next_free_slot = 0;
     next_slot_for_submission = 0;
+}
+
+static inline uint32_t my_cmp(const uint8_t *a, const uint8_t *b, const int len) {
+    switch (len) {
+        case 0:
+            return 0;
+        case 1:
+            return *a != *b;
+        case 2:
+            return * (uint16_t*) a != * (uint16_t*) b;
+        case 4:
+            return * (uint32_t *) a != * (uint32_t*) b;
+        default:
+            return memcmp(a,b,len);
+    }
 }

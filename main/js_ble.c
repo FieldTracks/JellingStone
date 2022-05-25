@@ -53,18 +53,23 @@ static uint8_t *own_eddystone_uid_data() {
     return data;
 }
 
+// Helper-Constants for faster comparison
+static const uint32_t eddystone_first_4_bytes_in_little_endian = 0xFEAA0303;
 static js_ble_beacon_t detect_beacon(uint8_t *rawData, size_t length) {
     if(length > 18) {
         uint8_t *data = rawData;
         ESP_LOGD(TAG, "Detecting Beacon data[0]=%02X data[1]=%02X data[2]=%02X data[3]=%02X data[4]=%02X data[5]=%02X data[6]=%02X data[7]=%02X data[8]=%02X",
                  data[0], data[1], data[2], data[3], data[4],data[5], data[6],data[7], data[8]);
 
-        if (data[0] == 0x03 && data[1] == 0x03 && data[2] == 0xAA && data[3] == 0xFE && data[5] == 0x16 && data[6] == 0xAA && data[7] == 0xFE) {
+        //if (data[0] == 0x03 && data[1] == 0x03 && data[2] == 0xAA && data[3] == 0xFE && data[5] == 0x16 && data[6] == 0xAA && data[7] == 0xFE) {
+        // Note: Use 32-Bit operations for better performance
+        if(*((uint32_t* )&data[0]) == eddystone_first_4_bytes_in_little_endian && data[5] == 0x16 && data[6] == 0xAA && data[7] == 0xFE) {
             if (data[8] == 0x00 && data[4] == 0x15 && length == 26) {
                 ESP_LOGI(TAG, "Got: JS_BEACON_EDDYSTONE_UID - Length: %d", length);
                 if(memcmp(js_nvs_ble_eddystone_my_org_id, &data[10], 10) == 0) {
-                    // Check, if the instance-id needs just 1 or 2 bytes
-                    if(data[20] == 0x00 && data[21] == 0x00 && data[22] == 0x00 && data[23] == 0x00) {
+                    // Check, if the instance-id needs just 1 or 2 bytes - Again use 32-Bit operations
+                    //if(data[20] == 0x00 && data[21] == 0x00 && data[22] == 0x00 && data[23] == 0x00) {
+                    if(*((uint32_t*) &data[20]) == 0) {
                         if(data[24] == 0) {
                             return JS_BEACON_EDDYSTONE_UID_MY_NETWORK_ONE_BYTE;
                         } else {

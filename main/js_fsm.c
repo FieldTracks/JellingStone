@@ -44,6 +44,9 @@ static void set_state_internal(js_state_t new_status) {
     if(new_status == booting) { // Start blinking-task when booting
         xTaskCreate(&js_blink_task_worker, "blink_task", configMINIMAL_STACK_SIZE, NULL, 5, &blinking_task);
     }
+    if(new_status == error) {
+        ESP_LOGI(TAG, "Moving to error-state. Prev state was %d", global_status);
+    }
 
     if(global_status > error) { // Error once => Error all the time
         global_status = new_status;
@@ -85,9 +88,11 @@ _Noreturn void js_fsm_app_start() {
     set_state_internal(booting);
     ESP_LOGI(TAG, "FSM: Starting - status is ip_disconnected.");
     check_error(js_nvs_init());
-    check_error(js_wlan_connect());
     check_error(js_mqtt_init());
     check_error(js_ble_scan_init());
+    check_error(js_wlan_connect());
+    js_ble_scan_stop();
+    js_ble_stop_beacon();
 
     // Main Loop
     uint32_t ulNotifiedValue;
@@ -109,7 +114,7 @@ _Noreturn void js_fsm_app_start() {
                          &ulNotifiedValue,
                          SCAN_PERIOD_SECONDS * 1000 / portTICK_PERIOD_MS // Scan period: 4 seconds
                          );
-        check_error(js_ble_stop_beacon());
+        js_ble_stop_beacon();
         if(scan_started == true) {
             ESP_LOGI(TAG, "Stopping Scan, submitting data");
             js_ble_scan_stop();

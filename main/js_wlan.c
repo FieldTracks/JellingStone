@@ -26,6 +26,8 @@ static void js_wlan_event_handler(void *arg, esp_event_base_t event_base, int32_
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         ESP_LOGI(TAG, "connect to the AP fail - retrying");
         js_on_wlan_disconnected();
+    } else if (event_base == WIFI_EVENT) {
+        ESP_LOGI(TAG, "Other wifi event %d", event_id);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
