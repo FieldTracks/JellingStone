@@ -123,7 +123,6 @@ _Noreturn void js_fsm_app_start() {
                 if(js_db_submit_over_mqtt() > 0) { // Sucessful submit
                     vTaskResume(blinking_task); // Short blink, "flash"
                 }
-                vTaskResume(&blinking_task);
             } else { // Empty database if not connected
                 ESP_LOGI(TAG, "Mqtt: Oops: Global state is %d - clearing db", global_status);
                 js_db_clear();
@@ -193,6 +192,8 @@ _Noreturn void js_blink_task_worker(void *pvParameter)
                 js_fsm_blink(1, 100);
                 break;
             case scan_and_publish:
+                js_fsm_blink(1, 100);
+                vTaskDelay(100 / portTICK_PERIOD_MS);
                 js_fsm_blink(1, 100);
                 vTaskSuspend( NULL );
                 break;

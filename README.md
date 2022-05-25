@@ -1,71 +1,75 @@
-# ESP-MQTT MQTT over WSS Sample application
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+# JellingStone
+This repository is part of the [Fieldtracks](https://fieldtracks.org/) project, which aims at creating a tracking system to be used in field exercises by relief organizations.
 
-This example connects to the broker mqtt.eclipseprojects.io over secure websockets and as a demonstration subscribes/unsubscribes and send a message on certain topic.
-(Please note that the public broker is maintained by the community so may not be always available, for details please see this [disclaimer](https://iot.eclipse.org/getting-started/#sandboxes))
+## Building
 
-It uses ESP-MQTT library which implements mqtt client to connect to mqtt broker.
-
-## How to use example
-
-### Hardware Required
-
-This example can be executed on any ESP32 board, the only required interface is WiFi and connection to internet.
-
-### Configure the project
-
-* Open the project configuration menu (`idf.py menuconfig`)
-* Configure Wi-Fi or Ethernet under "Example Connection Configuration" menu. See "Establishing Wi-Fi or Ethernet Connection" section in [examples/protocols/README.md](../../README.md) for more details.
-* When using Make build system, set `Default serial port` under `Serial flasher config`.
-
-Note how to create a PEM certificate for mqtt.eclipseprojects.io:
-
-PEM certificate for this example could be extracted from an openssl `s_client` command connecting to mqtt.eclipseprojects.io.
-In case a host operating system has `openssl` and `sed` packages installed, one could execute the following command to download and save the root certificate to a file (Note for Windows users: Both Linux like environment or Windows native packages may be used).
-```
-echo "" | openssl s_client -showcerts -connect mqtt.eclipseprojects.io:443 | sed -n "1,/Root/d; /BEGIN/,/END/p" | openssl x509 -outform PEM >mqtt_eclipse_org.pem
-```
-Please note that this is not a general command for downloading a root certificate for an arbitrary host;
-this command works with mqtt.eclipseprojects.io as the site provides root certificate in the chain, which then could be extracted
-with text operation.
-
-### Build and Flash
-
-Build the project and flash it to the board, then run monitor tool to view serial output:
+Please make yourself comfortable with ESP-IDF. JellingStone based on ESP-IDF a more-or-less standard way.
+It is built like other ESP-IDF Applications:
 
 ```
-idf.py -p PORT flash monitor
+git clone https://github.com/FieldTracks/JellingStone.git
 ```
 
-(To exit the serial monitor, type ``Ctrl-]``.)
+Finally run `make flash` to compile the project and flash it to an attached ESP32. Debug output can be watched with `make monitor` (or run them together with `make flash monitor`).
 
-See the Getting Started Guide for full steps to configure and use ESP-IDF to build projects.
+### Flashing wifi and mqtt credentials to the ESP32
+This will not run automatically during `make flash`.
 
-## Example Output
+1) Copy `nvs_data.csv.example` to `nvs_data.csv`
+2) Edit the credentials
+3) Run `./flash_nvs`
 
-```
-I (3714) event: sta ip: 192.168.0.139, mask: 255.255.255.0, gw: 192.168.0.2
-I (3714) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
-I (3964) MQTT_CLIENT: Sending MQTT CONNECT message, type: 1, id: 0000
-I (4164) MQTTWSS_EXAMPLE: MQTT_EVENT_CONNECTED
-I (4174) MQTTWSS_EXAMPLE: sent publish successful, msg_id=41464
-I (4174) MQTTWSS_EXAMPLE: sent subscribe successful, msg_id=17886
-I (4174) MQTTWSS_EXAMPLE: sent subscribe successful, msg_id=42970
-I (4184) MQTTWSS_EXAMPLE: sent unsubscribe successful, msg_id=50241
-I (4314) MQTTWSS_EXAMPLE: MQTT_EVENT_PUBLISHED, msg_id=41464
-I (4484) MQTTWSS_EXAMPLE: MQTT_EVENT_SUBSCRIBED, msg_id=17886
-I (4484) MQTTWSS_EXAMPLE: sent publish successful, msg_id=0
-I (4684) MQTTWSS_EXAMPLE: MQTT_EVENT_SUBSCRIBED, msg_id=42970
-I (4684) MQTTWSS_EXAMPLE: sent publish successful, msg_id=0
-I (4884) MQTT_CLIENT: deliver_publish, message_length_read=19, message_length=19
-I (4884) MQTTWSS_EXAMPLE: MQTT_EVENT_DATA
-TOPIC=/topic/qos0
-DATA=data
-I (5194) MQTT_CLIENT: deliver_publish, message_length_read=19, message_length=19
-I (5194) MQTTWSS_EXAMPLE: MQTT_EVENT_DATA
-TOPIC=/topic/qos0
-DATA=data
-```
+## Running JellingStone
+
+The current design is designed to run on ESP32-WROOM dev-boards having a blue and a read LED. LED status indication:
+ 
+* red (solely): Problems starting the APP. Jelling-Stone is not Active
+* red + blue blinking
+  * 1 Hz: Booting, no WLAN connection
+  * 5 Hz: IP connection, no MQTT connection
+  * 1 Hz / 5 Hz oscilating: Unrecoverable error occured. Check monitor log
+  * Short "twinkle": Report is submitted over MQTT
+* red + blue: Device is operating (i.e. WLAN + MQTT connection, BLE is scanning and beaconing)
+
+## MQTT messages
+
+### SCAN report
+Topic: `JellingStone/<MAC of BLE>/scan`
+
+#### Report structure and header
+
+| Byte     | Description                                                                                                                                                                                        |
+|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0        | Version=0x01, Reserved: 0x7B for JSON Payloads                                                                                                                                                     |
+| 1-4      | Report-ID / 32-Bit timestamp (seconds since Epoch), Big-Endian / Network Byte Order                                                                                                                |
+| 5        | Message-Sequence Number ID (signed), unique per report, starts at 0x01 in each report, incremented per message, negative number indicates final message, e.g. 0xFF=-1, if there's just one message |
+| 6        | unsigned, number of beacon data segments in this report                                                                                                                                            |
+| 7 - 1119 | 0...255 (up to 255) segments of beacon data                                                                                                                                                        |
+
+#### Beacon Data segment
+
+| Byte   | Description                                                                                                                                                                                                                                                                                                                         |
+|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0      | Type, i.e. <br /> `0x14`: AltBeacon <br /> `0x08`: Eddystone EID <br /> `0x10`: Eddystone UID <br /> `0x06`: Eddystone UID, configured organization <br > `0x01` Eddystone UID, configured organization, Instance-ID <= 255 (i.e. 1 Byte) <br /> `0x02` Eddystone UID, configured organization, Instance-ID <= 65536 (i.e. 2 Bytes) |
+| 1      | signed, RSSI in dBm + 100 (i.e. -228 dBm to 27 dBm) encoded as -128 to 127                                                                                                                                                                                                                                                          |
+| 2 - 21 | Beacon ID, variable length                                                                                                                                                                                                                                                                                                          |
 
 
+Beacon data is encoded on a Type-Value basis, whereas the byte value of the type corresponds to the length of the ID-Value
+
+
+### JSON status report
+
+Topic: `JellingStone/<MAC of BLE>/status`
+
+See content for details.
+
+## License
+This file is part of JellingStone - (C) The Fieldtracks Project
+
+    JellingStone is distributed under the civilian open source license (COSLi).
+    Military usage is forbidden.
+
+    You should have received a copy of COSLi along with JellingStone.
+    If not, please contact info@fieldtracks.org
 
