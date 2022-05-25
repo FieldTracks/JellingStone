@@ -43,7 +43,7 @@ Topic: `JellingStone/<MAC of BLE>/scan`
 | 0        | Version=0x01, Reserved: 0x7B for JSON Payloads                                                                                                                                                     |
 | 1-4      | Report-ID / 32-Bit timestamp (seconds since Epoch), Big-Endian / Network Byte Order                                                                                                                |
 | 5        | Message-Sequence Number ID (signed), unique per report, starts at 0x01 in each report, incremented per message, negative number indicates final message, e.g. 0xFF=-1, if there's just one message |
-| 6        | unsigned, number of beacon data segments in this report                                                                                                                                            |
+| 6        | unsigned, number of beacon data segments in this message (report has more, if and only if there are more messages)                                                                                 |
 | 7 - 1119 | 0...255 (up to 255) segments of beacon data                                                                                                                                                        |
 
 #### Beacon Data segment
