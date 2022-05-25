@@ -44,7 +44,7 @@ Topic: `JellingStone/<MAC of BLE>/scan`
 | 1-4      | Report-ID / 32-Bit timestamp (seconds since Epoch), Big-Endian / Network Byte Order                                                                                                                |
 | 5        | Message-Sequence Number ID (signed), unique per report, starts at 0x01 in each report, incremented per message, negative number indicates final message, e.g. 0xFF=-1, if there's just one message |
 | 6        | unsigned, number of beacon data segments in this message (report has more, if and only if there are more messages)                                                                                 |
-| 7 - 1119 | 0...255 (up to 255) segments of beacon data                                                                                                                                                        |
+| 7 - 1099 | 0...255 (up to 255) segments of beacon data                                                                                                                                                        |
 
 #### Beacon Data segment
 
@@ -73,3 +73,5 @@ This file is part of JellingStone - (C) The Fieldtracks Project
     You should have received a copy of COSLi along with JellingStone.
     If not, please contact info@fieldtracks.org
 
+## Misc notes
+* 1100 Bytes for message Tcp-header: 20 Bytes (typically), IPv: 20 / 40 Bytes, MQTT: 14-Bytes + Topic, Websocket, + TLS, should be below a minimum MTU of 1280 => Hardly any need for fragmentation  

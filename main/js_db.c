@@ -127,8 +127,8 @@ int js_db_submit_over_mqtt() {
         next_slot_for_submission = next_slot_for_submission + 1; // Overflow at 255 (i.e. database-size)
         ESP_LOGI(TAG, "Added entry - type: %d, rssi: %d", d_pos[DATA_TYPE_POS], d_pos[DATA_RSSI_POS]);
 
-        if(bytes_written > 1100 && next_slot_for_submission != next_free_slot) { // Less than one alt-beacon free, still data to submit
-            ESP_LOGI(TAG, "Message has %d bytes and exceeds limit of 975 bytes - preparing next one", bytes_written);
+        if(bytes_written > 1079 && next_slot_for_submission != next_free_slot) { // Less than one alt-beacon free, still data to submit
+            ESP_LOGI(TAG, "Message has %d bytes and exceeds limit of 1079 bytes - preparing next one", bytes_written);
             js_mqtt_publish_report(m_buffer, bytes_written,&msgid);
             // Re-use message-buffer for the next-message
             m_buffer[REPORT_MID_POS]++;
