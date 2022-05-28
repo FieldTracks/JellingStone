@@ -105,7 +105,7 @@ int js_mqtt_publish_report(uint8_t *message, int len, int *msg_id_out) {
     char mac_str[18];
     char topic_name[37];
     js_mymac_str(mac_str);
-    sprintf(topic_name,"JellingStone/%s/scan",mac_str);
+    sprintf(topic_name,"JellingStone/scan/%s",mac_str);
     *msg_id_out = esp_mqtt_client_publish(client, topic_name, (const char *) message, len, 1, 1);
     ESP_LOGI(TAG, "Published scan report - size %d bytes", len);
     return ESP_OK;
@@ -115,7 +115,7 @@ esp_err_t js_mqtt_publish_status(char *message,int *msg_id_out) {
     char mac_str[18];
     char topic_name[39];
     js_mymac_str(mac_str);
-    sprintf(topic_name,"JellingStone/%s/status",mac_str);
+    sprintf(topic_name,"JellingStone/status/%s",mac_str);
     size_t len = strlen(message);
     *msg_id_out = esp_mqtt_client_publish(client, topic_name, message, (int) len, 1, 1);
     ESP_LOGI(TAG, "Published status report - size %d bytes", len);
