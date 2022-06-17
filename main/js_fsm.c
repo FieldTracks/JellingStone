@@ -120,7 +120,8 @@ _Noreturn void js_fsm_app_start() {
             js_ble_scan_stop();
             if(global_status == scan_and_publish) { // Makes no sense to submit something if we're not connected
                 ESP_LOGI(TAG, "Mqtt: Go: Global state is %d", global_status);
-                if(js_db_submit_over_mqtt() > 0) { // Sucessful submit
+                if(js_db_submit_over_mqtt() == ESP_OK) { // Successful submit
+                    ESP_LOGI(TAG, "vTaskResume(blinking_task);");
                     vTaskResume(blinking_task); // Short blink, "flash"
                 }
             } else { // Empty database if not connected
@@ -193,7 +194,7 @@ _Noreturn void js_blink_task_worker(void *pvParameter)
                 break;
             case scan_and_publish:
                 js_fsm_blink(1, 100);
-                vTaskDelay(100 / portTICK_PERIOD_MS);
+                vTaskDelay(50 / portTICK_PERIOD_MS);
                 js_fsm_blink(1, 100);
                 vTaskSuspend( NULL );
                 break;

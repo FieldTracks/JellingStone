@@ -29,32 +29,32 @@ esp_err_t js_status_report_send() {
     ESP_LOGI(TAG, "Generating status report");
     cJSON *root, *app_info, *mem_info, *nvs;
     root = cJSON_CreateObject();
-    app_info = cJSON_AddObjectToObject(root,"app_info");
-    mem_info = cJSON_AddObjectToObject(root,"mem_info");
+    app_info = cJSON_AddObjectToObject(root,"appInfo");
+    mem_info = cJSON_AddObjectToObject(root,"memInfo");
     nvs = cJSON_AddObjectToObject(root,"nvs");
     const esp_app_desc_t *app_desc = esp_ota_get_app_description();
 
     cJSON_AddStringToObject(app_info, "version", app_desc->version);
-    cJSON_AddStringToObject(app_info, "project_name", app_desc->project_name);
+    cJSON_AddStringToObject(app_info, "projectName", app_desc->project_name);
     cJSON_AddStringToObject(app_info, "time", app_desc->time);
     cJSON_AddStringToObject(app_info, "date", app_desc->date);
-    cJSON_AddStringToObject(app_info, "idf_ver", app_desc->idf_ver);
+    cJSON_AddStringToObject(app_info, "idfVersion", app_desc->idf_ver);
 
-    cJSON_AddNumberToObject(mem_info,"free_heap_size", esp_get_free_heap_size());
-    cJSON_AddNumberToObject(mem_info,"min_heap_size", esp_get_minimum_free_heap_size());
+    cJSON_AddNumberToObject(mem_info,"freeHeapSize", esp_get_free_heap_size());
+    cJSON_AddNumberToObject(mem_info,"minHeapSize", esp_get_minimum_free_heap_size());
 
     js_id10bytes2str(js_nvs_ble_eddystone_my_org_id,eddy_org_str);
     js_nvs_wlan_ssid(ssid);
     js_6bytestr(js_nvs_ble_instance, eddy_instance_str);
-    cJSON_AddStringToObject(nvs, "WLAN_SSID", (char *) ssid);
-    cJSON_AddStringToObject(nvs, "MQTT_URL", js_nvs_mqtt_url());
-    cJSON_AddStringToObject(nvs, "MQTT_USER", js_nvs_mqtt_user());
-    cJSON_AddStringToObject(nvs, "BLE_EDDY_ORG", eddy_org_str);
-    cJSON_AddStringToObject(nvs, "BLE_EDDY_INST", eddy_instance_str);
+    cJSON_AddStringToObject(nvs, "wlanSsid", (char *) ssid);
+    cJSON_AddStringToObject(nvs, "mqttUrl", js_nvs_mqtt_url());
+    cJSON_AddStringToObject(nvs, "mqttUser", js_nvs_mqtt_user());
+    cJSON_AddStringToObject(nvs, "eddystoneNamespace", eddy_org_str);
+    cJSON_AddStringToObject(nvs, "eddystoneInstanceId", eddy_instance_str);
 
     js_ntp_time_str(timestmp);
-    cJSON_AddStringToObject(root, "date_time", timestmp);
-    cJSON_AddItemToObject(root, "uptime_seconds", cJSON_CreateNumber(esp_timer_get_time() / 1000 / 1000)); // NOLINT(cppcoreguidelines-narrowing-conversions,bugprone-integer-division)
+    cJSON_AddStringToObject(root, "timestamp", timestmp);
+    cJSON_AddItemToObject(root, "uptimeSeconds", cJSON_CreateNumber(esp_timer_get_time() / 1000 / 1000)); // NOLINT(cppcoreguidelines-narrowing-conversions,bugprone-integer-division)
 
     char *result = cJSON_PrintUnformatted(root);
     int msg_id;

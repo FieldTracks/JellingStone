@@ -103,7 +103,7 @@ static inline void insert_timestamp(long *position) {
 #define DATA_BEACON_DATA_POS 2
 
 static uint8_t m_buffer[1000]; // No more than 1000 Bytes per Message over MQTT => Avoid fragmentation on lower layers
-int js_db_submit_over_mqtt() {
+error_t js_db_submit_over_mqtt() {
     ESP_LOGI(TAG, "Submitting database over MQTT");
     ESP_LOGI(TAG, "Preparing new message");
     m_buffer[REPORT_VERSION_POS] = 1; // Protocol-Version: 1
