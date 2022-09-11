@@ -39,4 +39,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        title: "snapshot-v${GITHUB_RUN_NUMBER}"
+        title: "snapshot-v${{ GITHUB_RUN_NUMBER }}"
