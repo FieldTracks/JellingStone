@@ -19,3 +19,11 @@ jobs:
         esp_idf_version: v4.4
         target: esp32
         path: '.'
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v3
+      with:
+        name: Firmware
+        path: |
+          build/bootloader/bootloader.bin
+          build/partition_table/partition-table.bin
+          build/JellingStone.bin
