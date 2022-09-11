@@ -38,7 +38,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         name: "snapshot-v${{ env.GITHUB_RUN_NUMBER }}"
-        tag: ${{ github.ref }}
+        tag_name: ${{ github.ref }}
         files: |
           build/bootloader/bootloader.bin
           build/partition_table/partition-table.bin
