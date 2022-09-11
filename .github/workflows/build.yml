@@ -34,9 +34,9 @@ jobs:
         delete_tag_pattern: snapshot # defaults to ""
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create release
-        uses: elgohr/Github-Release-Action@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          title: snapshot-run-${{ GITHUB_RUN_NUMBER }}
+    - name: Create release
+      uses: elgohr/Github-Release-Action@v4
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      with:
+        title: snapshot-run-${{ GITHUB_RUN_NUMBER }}
