@@ -37,6 +37,6 @@ jobs:
     - name: Create release
       uses: elgohr/Github-Release-Action@v4
       env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        title: "snapshot-run-${GITHUB_RUN_NUMBER}"
+        title: "snapshot-v${GITHUB_RUN_NUMBER}"
