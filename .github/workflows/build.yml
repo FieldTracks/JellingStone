@@ -34,12 +34,13 @@ jobs:
         delete_tag_pattern: snapshot # defaults to ""
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Release
-      uses: softprops/action-gh-release@v1
+  - uses: "marvinpinto/action-automatic-releases@latest"
+    name: "Create Release"
       with:
-        name: "snapshot-v${GITHUB_RUN_NUMBER}"
-        tag_name: ${{ github.ref }}
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: false
         files: |
           build/bootloader/bootloader.bin
           build/partition_table/partition-table.bin
-          build/JellingStone.bin
+          build/JellingStone.bin      
+
