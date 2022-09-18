@@ -27,17 +27,10 @@ jobs:
           build/bootloader/bootloader.bin
           build/partition_table/partition-table.bin
           build/JellingStone.bin
-    - uses: dev-drprasad/delete-older-releases@v0.2.0
-      name: 'Delete old releases (keep latest: 2)'
-      with:
-        keep_latest: 2
-        delete_tag_pattern: snapshot # defaults to ""
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: "Create Release"
       uses: "marvinpinto/action-automatic-releases@latest"
       with:
-        automatic_release_tag: "current-dev"
+        automatic_release_tag: "current-main"
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: false
         files: |
