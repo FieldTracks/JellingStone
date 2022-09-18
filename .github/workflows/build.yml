@@ -34,8 +34,8 @@ jobs:
         delete_tag_pattern: snapshot # defaults to ""
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  - uses: "marvinpinto/action-automatic-releases@latest"
-    name: "Create Release"
+    - name: "Create Release"
+      uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: false
