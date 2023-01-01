@@ -3,12 +3,9 @@ on:
     branches:
       - main
 
-
 jobs:
-  build:env
-
+  build
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
