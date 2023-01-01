@@ -3,3 +3,4 @@ sdkconfig
 sdkconfig.old
 nvs_data.csv
 .vscode
+**.zip

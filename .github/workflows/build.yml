@@ -3,6 +3,9 @@ on:
     branches:
       - main
 
+env:
+  BUILD: "gh-${{ env.GITHUB_RUN_ID}}"
+
 jobs:
   build:
 
@@ -19,14 +22,14 @@ jobs:
         esp_idf_version: v4.4
         target: esp32
         path: '.'
+    - name: "Zip Firmware Files"
+      run: contrib/dist.sh
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v3
       with:
         name: Firmware
         path: |
-          build/bootloader/bootloader.bin
-          build/partition_table/partition-table.bin
-          build/JellingStone.bin
+          JellingStone*.zip
     - name: "Create Release"
       uses: "marvinpinto/action-automatic-releases@latest"
       with:
@@ -34,7 +37,5 @@ jobs:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: false
         files: |
-          build/bootloader/bootloader.bin
-          build/partition_table/partition-table.bin
-          build/JellingStone.bin      
+          JellingStone*.zip
 
