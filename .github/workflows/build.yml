@@ -18,7 +18,7 @@ jobs:
         target: esp32
         path: '.'
     - name: "Zip Firmware Files"
-      run: BUILD="gh$GITHUB_RUN_ID" sh contrib/dist.sh
+      run: VERSION="snapshot" BUILD"github-main" sh contrib/dist.sh
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v3
       with:
@@ -38,6 +38,6 @@ jobs:
       with:
         webdav_address: https://webdav.fieldtracks.org
         webdav_username: ${{secrets.webdav_username}}
-        webdav_password: ${{secrets.webdav_password}}
+        webdav_password: ${{secrets.webdav_username}}
         webdav_upload_path: "/JellingStone"
         files: "JellingStone*.zip"
