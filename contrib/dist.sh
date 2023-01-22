@@ -23,5 +23,5 @@ if [[ ! -d "$DIR" ]]; then
 fi
 
 ARCHIVE="${NAME}-${VERSION}+${BUILD}.zip"
-zip "$ARCHIVE" $DIR/bootloader/bootloader.bin $DIR/partition_table/partition-table.bin $DIR/JellingStone.bin
+zip -j "$ARCHIVE" $DIR/bootloader/bootloader.bin $DIR/partition_table/partition-table.bin $DIR/JellingStone.bin
 sha1sum "$ARCHIVE"
