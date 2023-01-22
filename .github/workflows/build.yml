@@ -18,7 +18,7 @@ jobs:
         target: esp32
         path: '.'
     - name: "Zip Firmware Files"
-      run: VERSION="snapshot" BUILD="github-main" sh contrib/dist.sh
+      run: VERSION="latest" BUILD="github-main" sh contrib/dist.sh
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v3
       with:
