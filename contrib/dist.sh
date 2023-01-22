@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PWD=$(pwd)
+
 DIR=./build
 
 if [ -z "$NAME" ]; then
@@ -23,5 +25,11 @@ if [[ ! -d "$DIR" ]]; then
 fi
 
 ARCHIVE="${NAME}-${VERSION}+${BUILD}.zip"
-zip -j "$ARCHIVE" $DIR/bootloader/bootloader.bin $DIR/partition_table/partition-table.bin $DIR/JellingStone.bin
+mkdir -p dist/JellingStone
+cp $DIR/bootloader/bootloader.bin dist/JellingStone
+cp $DIR/partition_table/partition-table.bin dist/JellingStone
+cp $DIR/JellingStone.bin dist/JellingStone
+cd dist || exit 1
+zip -j "$ARCHIVE" $DIR/bootloader/bootloader.bin  $
 sha1sum "$ARCHIVE"
+cd "$PWD" || exit 1
