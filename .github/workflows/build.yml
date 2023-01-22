@@ -38,6 +38,6 @@ jobs:
       with:
         webdav_address: https://webdav.fieldtracks.org
         webdav_username: ${{secrets.webdav_username}}
-        webdav_password: ${{secrets.webdav_username}}
+        webdav_password: ${{secrets.webdav_password}}
         webdav_upload_path: "/JellingStone"
         files: "JellingStone*.zip"
