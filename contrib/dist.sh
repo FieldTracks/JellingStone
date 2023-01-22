@@ -32,5 +32,5 @@ cp $DIR/JellingStone.bin dist/JellingStone
 cd dist || exit 1
 zip "$ARCHIVE" JellingStone/*
 sha1sum "$ARCHIVE"
-mv "$ARCHIVE" "$PWD"
+mv "$ARCHIVE" ..
 cd "$PWD" || exit 1
