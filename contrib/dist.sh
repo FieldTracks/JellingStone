@@ -15,7 +15,7 @@ if [ -z "$BUILD" ]; then
 fi
 
 
-if [[ ! -d "$DIR" ]]; then
+if [ ! -d "$DIR" ]; then
   # try to add .. - if the script is run from contrib
   DIR=../build
   if [[ ! -d "$DIR" ]]; then
@@ -30,6 +30,7 @@ cp $DIR/bootloader/bootloader.bin dist/JellingStone
 cp $DIR/partition_table/partition-table.bin dist/JellingStone
 cp $DIR/JellingStone.bin dist/JellingStone
 cd dist || exit 1
-zip -j "$ARCHIVE" $DIR/bootloader/bootloader.bin  $
+zip "$ARCHIVE" JellingStone/*
 sha1sum "$ARCHIVE"
+mv "$ARCHIVE" "$PWD"
 cd "$PWD" || exit 1
