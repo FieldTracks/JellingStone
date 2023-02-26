@@ -34,10 +34,10 @@ jobs:
         files: |
           JellingStone*.zip
     - name: "Upload files to webdav.fieldtracks.org"
-      uses: "bxb100/action-upload-webdav@d19f1edf785abf4b0b7f818ba46b6dba9b0334c6"
+      uses: "bxb100/action-upload-webdav@v1"
       with:
-        webdav_address: https://webdav.fieldtracks.org
+        webdav_address: ${{secrets.webdav_url}}
         webdav_username: ${{secrets.webdav_username}}
         webdav_password: ${{secrets.webdav_password}}
-        webdav_upload_path: "/JellingStone"
+        webdav_upload_path: "releases/JellingStone"
         files: "JellingStone*.zip"
